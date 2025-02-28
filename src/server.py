@@ -1,14 +1,14 @@
 import asyncio
-import logging
 import os
 from collections.abc import AsyncIterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import AsyncExitStack, asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import Body, FastAPI
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
+from loguru import logger
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.requests import Request
@@ -17,9 +17,9 @@ from telethon import TelegramClient
 from telethon.errors.rpcerrorlist import ApiIdInvalidError
 
 from src.api import router
+from src.data_classes import LinkUpdate
+from src.scrapper import scrapper
 from src.settings import TGBotSettings
-
-logger = logging.getLogger(__name__)
 
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> Response:
@@ -78,13 +78,47 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-if __name__ == "__main__":
-    logger = logging.getLogger(__name__)
-    logger.info("serving app on port: %d", 7777)
-    logger.info("http://0.0.0.0:7777/docs")
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=7777,
-        log_level=os.getenv("LOGGING_LEVEL", "info").lower(),
+
+@app.post("/updates", status_code=200)
+async def updates(link_update: LinkUpdate = Body(..., description="Отправить обновление")):
+    tg_client = app.tg_client
+    logger.info(f"tg_client :{tg_client}")
+    try:
+        for chat_id in link_update.tg_chat_ids:
+            await tg_client.send_message(
+                entity=chat_id,
+                message=f"Обновление по ссылке: {link_update.link}\n{link_update.description}",
+            )
+        return "Обновление обработано"
+    except Exception as e:
+        logger.exception(e)
+        raise e
+
+
+# if __name__ == "__main__":
+#     # logger = logging.getLogger(__name__)
+#     logger.info("serving app on port: %d", 7777)
+#     logger.info("http://0.0.0.0:7777/docs")
+
+#     uvicorn.run(
+#         app,
+#         host="0.0.0.0",
+#         port=7777,
+#         log_level=os.getenv("LOGGING_LEVEL", "info").lower(),
+#     )
+
+
+async def main():
+    await asyncio.gather(run_server(), scrapper())
+
+
+async def run_server():
+    config = uvicorn.Config(
+        app, host="0.0.0.0", port=7777, log_level=os.getenv("LOGGING_LEVEL", "info").lower()
     )
+    server = uvicorn.Server(config)
+    await server.serve()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

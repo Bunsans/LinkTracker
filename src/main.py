@@ -2,8 +2,20 @@ import asyncio
 import logging
 
 from telethon import TelegramClient, events
+from telethon.events import NewMessage
 
-from src.handlers import chat_id_cmd_handler
+__all__ = ("track_cmd_handler",)
+
+
+from src.handlers import (
+    chat_id_cmd_handler,
+    help_cmd_handler,
+    list_cmd_handler,
+    message_handler,
+    start_cmd_handler,
+    track_cmd_handler,
+    untrack_cmd_handler,
+)
 from src.settings import TGBotSettings
 
 logging.basicConfig()
@@ -17,9 +29,34 @@ client = TelegramClient("bot_session", settings.api_id, settings.api_hash).start
     bot_token=settings.token,
 )
 
+
 client.add_event_handler(
     chat_id_cmd_handler,
     events.NewMessage(pattern="/chat_id"),
+)
+client.add_event_handler(
+    start_cmd_handler,
+    events.NewMessage(pattern="/start"),
+)
+client.add_event_handler(
+    help_cmd_handler,
+    events.NewMessage(pattern="/help"),
+)
+client.add_event_handler(
+    list_cmd_handler,
+    events.NewMessage(pattern="/list"),
+)
+client.add_event_handler(
+    track_cmd_handler,
+    events.NewMessage(pattern="/track"),
+)
+client.add_event_handler(
+    message_handler,
+    events.NewMessage(pattern=r"^(?!\/)", incoming=True),
+)
+client.add_event_handler(
+    untrack_cmd_handler,
+    events.NewMessage(pattern="/untrack"),
 )
 
 
