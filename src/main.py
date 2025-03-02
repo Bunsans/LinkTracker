@@ -2,7 +2,6 @@ import asyncio
 import logging
 
 from telethon import TelegramClient, events
-from telethon.events import NewMessage
 
 __all__ = ("track_cmd_handler",)
 
@@ -25,7 +24,8 @@ logger = logging.getLogger(__name__)
 
 settings = TGBotSettings()  # type: ignore[call-arg]
 
-client = TelegramClient("bot_session", settings.api_id, settings.api_hash).start(
+client = TelegramClient("bot_session", settings.api_id, settings.api_hash)\
+    .start(
     bot_token=settings.token,
 )
 
@@ -52,7 +52,10 @@ client.add_event_handler(
 )
 client.add_event_handler(
     message_handler,
-    events.NewMessage(pattern=r"^(?!\/)", incoming=True),
+    ## TODO add check for commands not in list |^(\/[chat_id|start|track||untrack|help|list])\b
+    events.NewMessage(
+        pattern=r"^(?!\/)",
+        incoming=True),
 )
 client.add_event_handler(
     untrack_cmd_handler,

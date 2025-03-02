@@ -18,6 +18,9 @@ async def help_cmd_handler(
 /start --> start bot
 /help --> help
 /track --> begin tracking url
+    Possible format of links:
+        1. https://stackoverflow.com/questions/<number_of_question>
+        2. https://github.com/<owner>/<name_of_repo>
 /untrack --> stop tracking url
 /list --> list of tracked urls
         """,

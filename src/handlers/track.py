@@ -12,7 +12,6 @@ async def track_cmd_handler(
     event: NewMessage.Event,
 ) -> None:
     message = event.message.message
-    ## TODO add validate links
     args = message.split()
     user_id = event.chat_id
 
@@ -75,7 +74,9 @@ async def message_handler(event: NewMessage.Event):
         except ValueError:
             await event.client.send_message(
                 entity=event.input_chat,
-                message="Скорее всего ссылка не поддерживается, попробуйте изменить ее",
+                message="""Ссылка не поддерживается, попробуйте изменить ее по формату:
+    1. https://stackoverflow.com/questions/<number_of_question>
+    2. https://github.com/<owner>/<name_of_repo>""",
                 reply_to=event.message,
             )
             del user_states[user_id]
