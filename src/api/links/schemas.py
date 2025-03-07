@@ -24,6 +24,51 @@ def _validate_link(http_url: str) -> str:
     return http_url
 
 
+class LinkResponse(BaseModel):
+    id: int
+    link: str
+    tags: List[str]
+    filters: List[str]
+
+    @field_validator("link", mode="before")
+    @classmethod
+    def validate_link(cls, http_url: str) -> str:
+        return _validate_link(http_url)
+
+
+class ApiErrorResponse(BaseModel):
+    description: str
+    code: str
+    exception_name: str
+    exception_message: str
+    stacktrace: List[str]
+
+
+class AddLinkRequest(BaseModel):
+    link: str
+    tags: List[str]
+    filters: List[str]
+
+    @field_validator("link", mode="before")
+    @classmethod
+    def validate_link(cls, http_url: str) -> str:
+        return _validate_link(http_url)
+
+
+class ListLinksResponse(BaseModel):
+    links: List[LinkResponse]
+    size: int
+
+
+class RemoveLinkRequest(BaseModel):
+    link: str
+
+    @field_validator("link", mode="before")
+    @classmethod
+    def validate_link(cls, http_url: str) -> str:
+        return _validate_link(http_url)
+
+
 class LinkUpdate(BaseModel):
     id: int
     link: str

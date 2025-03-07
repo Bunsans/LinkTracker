@@ -1,6 +1,7 @@
 import httpx
 from telethon.events import NewMessage
 
+from src.constants import SUCCESS_RESPONSE_CODE
 from src.data import user_states
 
 __all__ = ("untrack_cmd_handler",)
@@ -31,9 +32,8 @@ async def untrack_cmd_handler(
                 headers={"id": str(chat_id)},
                 params={"link": link},
             )
-            print(f"######################\n{response.text}\n######################")
 
-            if response.status_code == 200:
+            if response.status_code == SUCCESS_RESPONSE_CODE:
                 await event.client.send_message(
                     entity=event.input_chat,
                     message=f"Вы прекратили следить за {link}",

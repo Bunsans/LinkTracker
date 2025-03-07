@@ -1,8 +1,13 @@
 import httpx
 from telethon.events import NewMessage
 
+from src.api.links.schemas import ListLinksResponse
+from src.constants import (
+    SERVER_ERROR_RESPONSE_CODE,
+    SUCCESS_RESPONSE_CODE,
+    UNOTHORIZED_RESPONSE_CODE,
+)
 from src.data import user_states
-from src.data_classes import ListLinksResponse
 
 __all__ = ("list_cmd_handler",)
 
@@ -18,7 +23,7 @@ async def list_cmd_handler(
             url="http://0.0.0.0:7777/api/v1/links",
             headers={"id": str(event.chat_id)},
         )
-        if response.status_code == 200:
+        if response.status_code == SUCCESS_RESPONSE_CODE:
             list_link_response = ListLinksResponse.model_validate_json(response.text)
             if not list_link_response.links:
                 message = "Список ссылок пуст"
@@ -27,11 +32,11 @@ async def list_cmd_handler(
                     [
                         f"Url: {link.link}\nTags: {link.tags}\nFilters: {link.filters}\n"
                         for link in list_link_response.links
-                    ]
+                    ],
                 )
-        elif response.status_code == 401:
+        elif response.status_code == UNOTHORIZED_RESPONSE_CODE:
             message = "Чат не зарегистрирован, для регистрации введите /start"
-        elif response.status_code == 500:
+        elif response.status_code == SERVER_ERROR_RESPONSE_CODE:
             message = f"Ошибка сервера:\n{response.text}"
         else:
             message = "Неизвестная ошибка"

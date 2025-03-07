@@ -14,7 +14,7 @@ async def chat_id_cmd_handler(
     if event.chat_id in user_states:
         del user_states[event.chat_id]
 
-    logger.info(f"Chat ID: {event.chat_id}\n entity: {event.input_chat}")
+    logger.info("Chat ID: %s\n entity: %s", event.chat_id, event.input_chat)
     await event.client.send_message(
         entity=event.input_chat,
         message=f"chat_id is: {event.chat_id}",

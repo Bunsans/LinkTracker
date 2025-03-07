@@ -2,8 +2,9 @@ import httpx
 from loguru import logger
 from telethon.events import NewMessage
 
+from src.api.links.schemas import AddLinkRequest
+from src.constants import SUCCESS_RESPONSE_CODE, UNOTHORIZED_RESPONSE_CODE
 from src.data import STATE_FILTERS, STATE_TAGS, STATE_TRACK, State, user_states
-from src.data_classes import AddLinkRequest
 
 __all__ = ("track_cmd_handler", "message_handler")
 
@@ -32,7 +33,7 @@ async def track_cmd_handler(
         user_states[user_id] = State(state=STATE_TRACK)
 
 
-async def message_handler(event: NewMessage.Event):
+async def message_handler(event: NewMessage.Event) -> None:
     logger.debug(f"user_states: {user_states}")
     user_id = event.chat_id
     if user_id not in user_states:
@@ -87,15 +88,12 @@ async def message_handler(event: NewMessage.Event):
                 headers={"id": str(event.chat_id)},
                 json=body.model_dump(),
             )
-            if response.status_code == 200:
+            if response.status_code == SUCCESS_RESPONSE_CODE:
                 message = f"Ссылка {link} добавлена с тэгами: {tags} и фильтрами: {filters}"
-            elif response.status_code == 400:
-                message = "ошибка при добавлении ссылки"
-            elif response.status_code == 401:
+            elif response.status_code == UNOTHORIZED_RESPONSE_CODE:
                 message = "Чат не зарегистрирован, для регистрации введите /start"
             else:
                 message = response.text
-
             await event.client.send_message(
                 entity=event.input_chat,
                 message=message,

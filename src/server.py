@@ -3,6 +3,7 @@ import os
 from collections.abc import AsyncIterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import AsyncExitStack, asynccontextmanager
+from typing import Optional
 
 import uvicorn
 from fastapi import Body, FastAPI
@@ -29,7 +30,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @asynccontextmanager
 async def default_lifespan(application: FastAPI) -> AsyncIterator[None]:
-
     logger.debug("Running application lifespan ...")
 
     loop = asyncio.get_event_loop()
@@ -80,41 +80,30 @@ app.add_middleware(
 
 
 @app.post("/updates", status_code=200)
-async def updates(link_update: LinkUpdate = Body(..., description="Отправить обновление")):
-    tg_client = app.tg_client
+async def updates(
+    link_update: LinkUpdate = Body(..., description="Отправить обновление"),
+) -> Optional[str]:
+    tg_client = app.tg_client  # type: ignore[attr-defined]
     logger.info(f"tg_client :{tg_client}")
-    try:
-        for chat_id in link_update.tg_chat_ids:
-            await tg_client.send_message(
-                entity=chat_id,
-                message=f"Обновление по ссылке: {link_update.link}\n{link_update.description}",
-            )
-        return "Обновление обработано"
-    except Exception as e:
-        logger.exception(e)
-        raise e
+    for chat_id in link_update.tg_chat_ids:
+        await tg_client.send_message(
+            entity=chat_id,
+            message=f"Обновление по ссылке: {link_update.link}\n{link_update.description}",
+        )
+    return "Обновление обработано"
 
 
-# if __name__ == "__main__":
-#     # logger = logging.getLogger(__name__)
-#     logger.info("serving app on port: %d", 7777)
-#     logger.info("http://0.0.0.0:7777/docs")
-
-#     uvicorn.run(
-#         app,
-#         host="0.0.0.0",
-#         port=7777,
-#         log_level=os.getenv("LOGGING_LEVEL", "info").lower(),
-#     )
-
-
-async def main():
+async def main() -> None:
     await asyncio.gather(run_server(), scrapper())
 
 
-async def run_server():
+async def run_server() -> None:
     config = uvicorn.Config(
-        app, host="0.0.0.0", port=7777, log_level=os.getenv("LOGGING_LEVEL", "info").lower()
+        "server:app",
+        host="0.0.0.0",
+        port=7777,
+        log_level=os.getenv("LOGGING_LEVEL", "info").lower(),
+        reload=True,
     )
     server = uvicorn.Server(config)
     await server.serve()
