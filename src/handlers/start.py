@@ -1,12 +1,9 @@
 import httpx
 from telethon.events import NewMessage
 
-from src.constants import (
-    SERVER_ERROR_RESPONSE_CODE,
-    SUCCESS_RESPONSE_CODE,
-    VALIDATION_ERROR_RESPONSE_CODE,
-)
+from src.constants import ResponseCode
 from src.data import user_states
+from src.utils import send_message_from_bot
 
 __all__ = ("start_cmd_handler",)
 
@@ -21,14 +18,15 @@ async def start_cmd_handler(
         response = await client.post(
             url=f"http://0.0.0.0:7777/api/v1/tg-chat/{event.chat_id}",
         )
-        if response.status_code == SUCCESS_RESPONSE_CODE:
-            message = "Чат зарегистрирован!\nДля добавления ссылки введите /track"
-        elif response.status_code == SERVER_ERROR_RESPONSE_CODE:
-            message = "Проблема на сервере"
-        elif response.status_code == VALIDATION_ERROR_RESPONSE_CODE:
-            message = "Ошибка валидации"
-        await event.client.send_message(
-            entity=event.input_chat,
-            message=message,
-            reply_to=event.message,
-        )
+        match response.status_code:
+            case ResponseCode.SUCCESS.value:
+                message = "Чат зарегистрирован!\nДля добавления ссылки введите /track"
+            case ResponseCode.ALREADY_REPORTED.value:
+                message = "Чат уже зарегистрирован\nДля добавления ссылки введите /track"
+            case ResponseCode.SERVER_ERROR.value:
+                message = "Проблема на сервере"
+            case ResponseCode.VALIDATION_ERROR.value:
+                message = "Ошибка валидации"
+            case _:
+                message = f"Неизвестная ошибка:{response.text}"
+        await send_message_from_bot(event, message)

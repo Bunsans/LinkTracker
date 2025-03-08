@@ -5,7 +5,7 @@ from typing import Literal, Tuple
 import httpx
 from loguru import logger
 
-from src.constants import LEN_OF_PARTS_GITHUB_URL, SUCCESS_RESPONSE_CODE, TIMEZONE
+from src.constants import LEN_OF_PARTS_GITHUB_URL, TIMEZONE, ResponseCode
 from src.data import links_chat_id_mapper
 from src.data_classes import LinkUpdate
 
@@ -111,7 +111,7 @@ async def check_updates() -> None:
                     url="http://0.0.0.0:7777/updates",
                     json=body.model_dump(),
                 )
-                if response.status_code == SUCCESS_RESPONSE_CODE:
+                if response.status_code == ResponseCode.SUCCESS.value:
                     logger.info("good send")
                 else:
                     logger.info(f"Something wrong\n{response.text}")

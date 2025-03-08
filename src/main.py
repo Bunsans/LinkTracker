@@ -13,6 +13,7 @@ from src.handlers import (
     message_handler,
     start_cmd_handler,
     track_cmd_handler,
+    unknown_command_handler,
     untrack_cmd_handler,
 )
 from src.settings import TGBotSettings
@@ -57,6 +58,9 @@ client.add_event_handler(
 client.add_event_handler(
     untrack_cmd_handler,
     events.NewMessage(pattern="/untrack"),
+)
+client.add_event_handler(
+    unknown_command_handler, events.NewMessage(pattern=r"^/(?!start|help|track|untrack|list).*"),
 )
 
 
