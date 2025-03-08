@@ -1,7 +1,7 @@
 import httpx
 from telethon.events import NewMessage
 
-from src.constants import ResponseCode
+from src.constants import URL_API_SERVER, ResponseCode
 from src.data import user_states
 from src.utils import send_message_from_bot
 
@@ -16,7 +16,7 @@ async def start_cmd_handler(
 
     async with httpx.AsyncClient() as client:
         response = await client.post(
-            url=f"http://0.0.0.0:7777/api/v1/tg-chat/{event.chat_id}",
+            url=URL_API_SERVER + f"/tg-chat/{event.chat_id}",
         )
         match response.status_code:
             case ResponseCode.SUCCESS.value:

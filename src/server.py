@@ -18,6 +18,7 @@ from telethon import TelegramClient
 from telethon.errors.rpcerrorlist import ApiIdInvalidError
 
 from src.api import router
+from src.constants import HOST_API_SERVER, PORT_API_SERVER, PREFIX_API_SERVER
 from src.data_classes import LinkUpdate
 from src.scrapper import scrapper
 from src.settings import TGBotSettings
@@ -66,7 +67,7 @@ app = FastAPI(
 
 app.exception_handler(RequestValidationError)(validation_exception_handler)
 
-app.include_router(router=router, prefix="/api/v1")
+app.include_router(router=router, prefix=PREFIX_API_SERVER)
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
@@ -100,8 +101,8 @@ async def main() -> None:
 async def run_server() -> None:
     config = uvicorn.Config(
         "server:app",
-        host="0.0.0.0",
-        port=7777,
+        host=HOST_API_SERVER,
+        port=PORT_API_SERVER,
         log_level=os.getenv("LOGGING_LEVEL", "info").lower(),
         reload=True,
     )

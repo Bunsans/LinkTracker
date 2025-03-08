@@ -2,7 +2,7 @@ import httpx
 from loguru import logger
 from telethon.events import NewMessage
 
-from src.constants import ResponseCode
+from src.constants import URL_API_SERVER, ResponseCode
 from src.data import user_states
 from src.utils import not_registrated, send_message_from_bot
 
@@ -31,7 +31,7 @@ async def untrack_cmd_handler(
         link = args[1]
         async with httpx.AsyncClient() as client:
             response = await client.delete(
-                url="http://0.0.0.0:7777/api/v1/links",
+                url=URL_API_SERVER + "/links",
                 headers={"tg-chat-id": str(chat_id)},
                 params={"link": link},
             )

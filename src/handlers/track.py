@@ -3,7 +3,7 @@ from loguru import logger
 from telethon.events import NewMessage
 
 from src.api.links.schemas import AddLinkRequest
-from src.constants import ResponseCode
+from src.constants import URL_API_SERVER, ResponseCode
 from src.data import STATE_FILTERS, STATE_TAGS, STATE_TRACK, State, user_states
 from src.utils import not_registrated, send_message_from_bot
 
@@ -65,7 +65,7 @@ async def message_handler(event: NewMessage.Event) -> None:
             return
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                url="http://0.0.0.0:7777/api/v1/links",
+                url=URL_API_SERVER + "/links",
                 headers={"tg-chat-id": str(event.chat_id)},
                 json=body.model_dump(),
             )
