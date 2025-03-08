@@ -60,7 +60,8 @@ client.add_event_handler(
     events.NewMessage(pattern="/untrack"),
 )
 client.add_event_handler(
-    unknown_command_handler, events.NewMessage(pattern=r"^/(?!start|help|track|untrack|list).*"),
+    unknown_command_handler,
+    events.NewMessage(pattern=r"^/(?!start|help|track|untrack|list).*"),
 )
 
 
