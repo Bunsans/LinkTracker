@@ -8,5 +8,5 @@ __all__ = ("router",)
 
 router = APIRouter()
 router.include_router(ping.router, tags=["ping"])
-router.include_router(links_views.router, tags=["tg_chat"])
-router.include_router(tg_chat_views.router, tags=["links"])
+router.include_router(links_views.router, tags=["links"])
+router.include_router(tg_chat_views.router, tags=["tg_chat"])

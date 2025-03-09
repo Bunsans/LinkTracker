@@ -6,12 +6,13 @@ from loguru import logger
 
 from src.api.links.schemas import AddLinkRequest, LinkResponse, ListLinksResponse, RemoveLinkRequest
 from src.data import chat_id_links_mapper, links_chat_id_mapper
+from src.exceptions import LinkNotFoundError, NotRegistratedChat
 
 
 def get_links(tg_chat_id: int) -> ListLinksResponse:
     logger.debug(f"Before: chat_id_links_mapper: {chat_id_links_mapper}")
     if tg_chat_id not in chat_id_links_mapper:
-        raise HTTPException(status_code=401, detail="Чат не зарегистрирован")
+        raise NotRegistratedChat(message="Not registrated chat. While getting links")
     links = chat_id_links_mapper[tg_chat_id]
     logger.debug(f"After: chat_id_links_mapper: {chat_id_links_mapper}")
     return ListLinksResponse(links=links, size=sys.getsizeof(links))
@@ -24,7 +25,7 @@ def add_link(
     """Добавить отслеживание ссылки."""
     logger.debug(f"Before: chat_id_links_mapper: {chat_id_links_mapper}")
     if tg_chat_id not in chat_id_links_mapper:
-        raise HTTPException(status_code=401, detail="Чат не зарегистрирован")
+        raise NotRegistratedChat(message="Not registrated chat. While adding link")
     list_links = chat_id_links_mapper[tg_chat_id]
     # link_request : AddLinkRequest -> link_response LinkResponse
     link_response = LinkResponse(
@@ -64,7 +65,7 @@ def remove_link(
     logger.debug(f"Before: chat_id_links_mapper: {chat_id_links_mapper}")
 
     if tg_chat_id not in chat_id_links_mapper:
-        raise HTTPException(status_code=401, detail="Чат не зарегистрирован")
+        raise NotRegistratedChat(message="Not registrated chat.")
     logger.debug(f"Before: links_chat_id_mapper: {links_chat_id_mapper}")
     if link_request.link in links_chat_id_mapper:
         set_ids = links_chat_id_mapper[link_request.link]
@@ -86,4 +87,6 @@ def remove_link(
                 filters=link_.filters,
             )
     logger.debug(f"After: chat_id_links_mapper: {chat_id_links_mapper}")
-    raise HTTPException(status_code=404, detail="Ссылка не найдена")
+    raise LinkNotFoundError(
+        message="Link not found. While trying to remove it."
+    )  # HTTPException(status_code=404, detail="Ссылка не найдена")

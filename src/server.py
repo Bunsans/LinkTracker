@@ -3,12 +3,13 @@ import os
 from collections.abc import AsyncIterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import AsyncExitStack, asynccontextmanager
-from typing import Optional
+from typing import Callable, Literal, Optional
 
 import uvicorn
-from fastapi import Body, FastAPI
+from fastapi import Body, FastAPI, status
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from loguru import logger
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
@@ -20,6 +21,13 @@ from telethon.errors.rpcerrorlist import ApiIdInvalidError
 from src.api import router
 from src.constants import HOST_API_SERVER, PORT_API_SERVER, PREFIX_API_SERVER
 from src.data_classes import LinkUpdate
+from src.exceptions import (
+    EntityAlreadyExistsError,
+    LinkTrackerApiError,
+    NotRegistratedChat,
+    ServiceError,
+)
+from src.exceptions.exceptions import LinkNotFoundError
 from src.scrapper import scrapper
 from src.settings import TGBotSettings
 
@@ -27,6 +35,28 @@ from src.settings import TGBotSettings
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> Response:
     logger.exception("Invalid request data: %s", exc)
     return await request_validation_exception_handler(request, exc)
+
+
+def create_exception_handler(
+    status_code: int, initial_detail: str, logger_level: Literal["warning", "error"] = "warning"
+) -> Callable[[Request, LinkTrackerApiError], JSONResponse]:
+    detail = {"message": initial_detail}  # Using a dictionary to hold the detail
+
+    async def exception_handler(_: Request, exc: LinkTrackerApiError) -> JSONResponse:
+        if exc.message:
+            detail["message"] = exc.message
+
+        if exc.name:
+            detail["message"] = f"{detail['message']} [{exc.name}]"
+        if logger_level == "warning":
+            logger.warning(exc)
+        elif logger_level == "error":
+            logger.error(exc)
+        else:
+            logger.debug(exc)
+        return JSONResponse(status_code=status_code, content={"detail": detail["message"]})
+
+    return exception_handler
 
 
 @asynccontextmanager
@@ -67,6 +97,24 @@ app = FastAPI(
 
 app.exception_handler(RequestValidationError)(validation_exception_handler)
 
+app.add_exception_handler(
+    exc_class_or_status_code=ServiceError,
+    handler=create_exception_handler(
+        status.HTTP_500_INTERNAL_SERVER_ERROR, "Server error.", logger_level="error"
+    ),
+)
+app.add_exception_handler(
+    exc_class_or_status_code=NotRegistratedChat,
+    handler=create_exception_handler(status.HTTP_401_UNAUTHORIZED, "Not registrated chat."),
+)
+app.add_exception_handler(
+    exc_class_or_status_code=EntityAlreadyExistsError,
+    handler=create_exception_handler(status.HTTP_208_ALREADY_REPORTED, "Entity already exist."),
+)
+app.add_exception_handler(
+    exc_class_or_status_code=LinkNotFoundError,
+    handler=create_exception_handler(status.HTTP_404_NOT_FOUND, "Link not found."),
+)
 app.include_router(router=router, prefix=PREFIX_API_SERVER)
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
