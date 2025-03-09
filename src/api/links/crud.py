@@ -1,18 +1,17 @@
 import sys
 from typing import List
 
-from fastapi import HTTPException
 from loguru import logger
 
 from src.api.links.schemas import AddLinkRequest, LinkResponse, ListLinksResponse, RemoveLinkRequest
 from src.data import chat_id_links_mapper, links_chat_id_mapper
-from src.exceptions import LinkNotFoundError, NotRegistratedChat
+from src.exceptions import LinkNotFoundError, NotRegistratedChatError
 
 
 def get_links(tg_chat_id: int) -> ListLinksResponse:
     logger.debug(f"Before: chat_id_links_mapper: {chat_id_links_mapper}")
     if tg_chat_id not in chat_id_links_mapper:
-        raise NotRegistratedChat(message="Not registrated chat. While getting links")
+        raise NotRegistratedChatError(message="Not registrated chat. While getting links")
     links = chat_id_links_mapper[tg_chat_id]
     logger.debug(f"After: chat_id_links_mapper: {chat_id_links_mapper}")
     return ListLinksResponse(links=links, size=sys.getsizeof(links))
@@ -25,7 +24,7 @@ def add_link(
     """Добавить отслеживание ссылки."""
     logger.debug(f"Before: chat_id_links_mapper: {chat_id_links_mapper}")
     if tg_chat_id not in chat_id_links_mapper:
-        raise NotRegistratedChat(message="Not registrated chat. While adding link")
+        raise NotRegistratedChatError(message="Not registrated chat. While adding link")
     list_links = chat_id_links_mapper[tg_chat_id]
     # link_request : AddLinkRequest -> link_response LinkResponse
     link_response = LinkResponse(
@@ -65,7 +64,7 @@ def remove_link(
     logger.debug(f"Before: chat_id_links_mapper: {chat_id_links_mapper}")
 
     if tg_chat_id not in chat_id_links_mapper:
-        raise NotRegistratedChat(message="Not registrated chat.")
+        raise NotRegistratedChatError(message="Not registrated chat.")
     logger.debug(f"Before: links_chat_id_mapper: {links_chat_id_mapper}")
     if link_request.link in links_chat_id_mapper:
         set_ids = links_chat_id_mapper[link_request.link]
@@ -88,5 +87,5 @@ def remove_link(
             )
     logger.debug(f"After: chat_id_links_mapper: {chat_id_links_mapper}")
     raise LinkNotFoundError(
-        message="Link not found. While trying to remove it."
+        message="Link not found. While trying to remove it.",
     )  # HTTPException(status_code=404, detail="Ссылка не найдена")

@@ -2,14 +2,14 @@ from .exceptions import (
     EntityAlreadyExistsError,
     LinkNotFoundError,
     LinkTrackerApiError,
-    NotRegistratedChat,
+    NotRegistratedChatError,
     ServiceError,
 )
 
 __all__ = (
     "LinkTrackerApiError",
     "ServiceError",
-    "NotRegistratedChat",
+    "NotRegistratedChatError",
     "EntityAlreadyExistsError",
     "LinkNotFoundError",
 )
