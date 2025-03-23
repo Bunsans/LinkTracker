@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, Mock
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from httpx import AsyncClient
 from telethon import TelegramClient
 from telethon.events import NewMessage
 
@@ -12,11 +13,17 @@ from src.api import router
 from src.server import default_lifespan
 
 
+@pytest.fixture
+def httpx_client_mock():
+    client = MagicMock(spec=AsyncClient)
+    return client
+
+
 @pytest.fixture(scope="session")
 def mock_event() -> Mock:
     event = Mock(spec=NewMessage.Event)
     event.input_chat = "test_chat"
-    event.chat_id = 123456789
+    event.chat_id = 1
     event.message = "/chat_id"
     event.client = MagicMock(spec=TelegramClient)
     return event

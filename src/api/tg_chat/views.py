@@ -8,9 +8,8 @@ router = APIRouter(prefix="/tg-chat")
 
 
 @router.get("/{tg_chat_id}", status_code=200)
-async def is_registered_chat(tg_chat_id: int = Path(..., description="ID чата")) -> None:
-    """Проверка наличия чата."""
-    return crud.is_registered_chat(tg_chat_id)
+async def is_chat_registrated(tg_chat_id: int = Path(..., description="ID чата")) -> bool:
+    return crud.is_chat_registrated(tg_chat_id)
 
 
 @router.post("/{tg_chat_id}", status_code=200)

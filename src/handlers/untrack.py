@@ -1,10 +1,11 @@
 import httpx
+from fastapi import status
 from loguru import logger
 from telethon.events import NewMessage
 
-from src.constants import URL_API_SERVER, ResponseCode
-from src.data import user_states
-from src.utils import not_registrated, send_message_from_bot
+from src.handlers.handlers_settings import api_settings, user_states
+from src.handlers.is_chat_registrated import is_chat_registrated
+from src.utils import send_message_from_bot
 
 __all__ = ("untrack_cmd_handler",)
 
@@ -15,7 +16,7 @@ async def untrack_cmd_handler(
     if event.chat_id in user_states:
         del user_states[event.chat_id]
 
-    if await not_registrated(event):
+    if not await is_chat_registrated(event):
         return
     message = event.message.message
     args = message.split()
@@ -31,17 +32,17 @@ async def untrack_cmd_handler(
         link = args[1]
         async with httpx.AsyncClient() as client:
             response = await client.delete(
-                url=URL_API_SERVER + "/links",
+                url=api_settings.url_server + "/links",
                 headers={"tg-chat-id": str(chat_id)},
                 params={"link": link},
             )
             status_code = response.status_code
             match status_code:
-                case ResponseCode.SUCCESS.value:
+                case status.HTTP_200_OK:
                     message = f"Вы прекратили следить за {link}"
-                case ResponseCode.VALIDATION_ERROR.value:
+                case status.HTTP_422_UNPROCESSABLE_ENTITY:
                     message = "Неверный формат для ссылки. Про форматы смотрите в /help"
-                case ResponseCode.NOT_FOUND.value:
+                case status.HTTP_404_NOT_FOUND:
                     message = """Ссылка не найдена. Проверьте правильность введенной ссылки.
 Список имеющихся ссылок можно посмотреть в /list"""
                 case _:

@@ -14,3 +14,10 @@ async def test_chat_id_cmd_handler(mock_event: Mock) -> None:
         message="chat_id is: 123456789",
         reply_to=mock_event.message,
     )
+
+
+@pytest.mark.asyncio
+async def test_track_cmd_handler(mock_event, httpx_client_mock):
+    mock_event.message.message = "/track https://example.com"
+    with pytest.raises(NotRegistratedChatError):
+        await track_cmd_handler(mock_event)

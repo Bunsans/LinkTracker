@@ -1,11 +1,19 @@
 import httpx
+from fastapi import status
 from loguru import logger
 from telethon.events import NewMessage
 
 from src.api.links.schemas import AddLinkRequest
-from src.constants import URL_API_SERVER, ResponseCode
-from src.data import STATE_FILTERS, STATE_TAGS, STATE_TRACK, State, user_states
-from src.utils import not_registrated, send_message_from_bot
+from src.handlers.handlers_settings import (
+    STATE_FILTERS,
+    STATE_TAGS,
+    STATE_TRACK,
+    State,
+    api_settings,
+    user_states,
+)
+from src.handlers.is_chat_registrated import is_chat_registrated
+from src.utils import send_message_from_bot
 
 __all__ = ("track_cmd_handler", "message_handler")
 
@@ -13,7 +21,7 @@ __all__ = ("track_cmd_handler", "message_handler")
 async def track_cmd_handler(
     event: NewMessage.Event,
 ) -> None:
-    if await not_registrated(event):
+    if not await is_chat_registrated(event):
         return
     message = event.message.message
     args = message.split()
@@ -65,14 +73,14 @@ async def message_handler(event: NewMessage.Event) -> None:
             return
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                url=URL_API_SERVER + "/links",
+                url=api_settings.url_server + "/links",
                 headers={"tg-chat-id": str(event.chat_id)},
                 json=body.model_dump(),
             )
             match response.status_code:
-                case ResponseCode.SUCCESS.value:
+                case status.HTTP_200_OK:
                     message = f"Ссылка {link} добавлена с тэгами: {tags} и фильтрами: {filters}"
-                case ResponseCode.UNAUTHORIZED.value:
+                case status.HTTP_401_UNAUTHORIZED:
                     message = "Чат не зарегистрирован, для регистрации введите /start"
                 case _:
                     message = response.text

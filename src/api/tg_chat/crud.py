@@ -1,33 +1,19 @@
 from typing import Optional
 
-from loguru import logger
-
-from src.data import chat_id_links_mapper
-from src.exceptions import NotRegistratedChatError
-from src.exceptions.exceptions import EntityAlreadyExistsError
+from src.data import link_service
 
 
-def is_registered_chat(tg_chat_id: int) -> None:
-    """Зарегистрировать чат."""
-    logger.debug(f"chat_id_links_mapper: {chat_id_links_mapper}")
-    if tg_chat_id in chat_id_links_mapper:
-        return
-    raise NotRegistratedChatError(message="Not registrated chat. While checking registration")
+def is_chat_registrated(tg_chat_id: int) -> bool:
+    return link_service.is_chat_registrated(tg_chat_id)
 
 
 def register_chat(tg_chat_id: int) -> Optional[str]:
     """Зарегистрировать чат."""
-    logger.debug(f"chat_id_links_mapper: {chat_id_links_mapper}")
-    if tg_chat_id in chat_id_links_mapper:
-        raise EntityAlreadyExistsError(message="Chat already registered. While registering chat")
-    chat_id_links_mapper[tg_chat_id] = []
+    link_service.register_chat(tg_chat_id)
     return "Чат зарегистрирован"
 
 
 def delete_chat(tg_chat_id: int) -> str:
     """Удалить чат."""
-    logger.debug(f"chat_id_links_mapper: {chat_id_links_mapper}")
-    if tg_chat_id not in chat_id_links_mapper:
-        raise NotRegistratedChatError(message="Not registrated chat. While deleting chat")
-    del chat_id_links_mapper[tg_chat_id]
+    link_service.delete_chat(tg_chat_id)
     return "Чат успешно удалён"

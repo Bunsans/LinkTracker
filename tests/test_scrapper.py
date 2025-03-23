@@ -1,7 +1,7 @@
 import httpx
 import pytest
 
-from src.scrapper import GitHubClient
+from src.scrapper.clients import GitHubClient
 
 
 @pytest.mark.parametrize(

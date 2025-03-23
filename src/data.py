@@ -1,22 +1,5 @@
-from dataclasses import dataclass
-from typing import Any, Dict, List
+from src.repository.link_repository import LinkRepositoryLocal
+from src.repository.link_service import LinkService
 
-
-@dataclass
-class State:
-    state: str
-    link: str | None = None
-    tags: List[str] | None = None
-    filters: List[str] | None = None
-
-
-STATE_TRACK = "track"
-STATE_TAGS = "tags"
-STATE_FILTERS = "filters"
-
-user_states: Dict[int, State] = {}
-
-
-chat_id_links_mapper: Dict[int, List[Any]] = {}
-
-links_chat_id_mapper: Dict[str, set[int]] = {}
+link_repository = LinkRepositoryLocal()
+link_service = LinkService(link_repository)

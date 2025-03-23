@@ -1,4 +1,3 @@
-###################################
 from fastapi import status
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
@@ -47,7 +46,8 @@ async def server_error_exception_handler(_: Request, exc: ServiceError) -> Respo
 
 
 async def not_registrated_chat_exception_handler(
-    _: Request, exc: NotRegistratedChatError,
+    _: Request,
+    exc: NotRegistratedChatError,
 ) -> Response:
     logger.warning(exc)
     return await _request_link_tracker_api_exception_handler(
@@ -58,7 +58,8 @@ async def not_registrated_chat_exception_handler(
 
 
 async def entity_already_exist_exception_handler(
-    _: Request, exc: EntityAlreadyExistsError,
+    _: Request,
+    exc: EntityAlreadyExistsError,
 ) -> Response:
     logger.warning(exc)
     return await _request_link_tracker_api_exception_handler(

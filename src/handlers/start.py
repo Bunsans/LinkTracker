@@ -1,8 +1,8 @@
 import httpx
+from fastapi import status
 from telethon.events import NewMessage
 
-from src.constants import URL_API_SERVER, ResponseCode
-from src.data import user_states
+from src.handlers.handlers_settings import api_settings, user_states
 from src.utils import send_message_from_bot
 
 __all__ = ("start_cmd_handler",)
@@ -16,16 +16,16 @@ async def start_cmd_handler(
 
     async with httpx.AsyncClient() as client:
         response = await client.post(
-            url=URL_API_SERVER + f"/tg-chat/{event.chat_id}",
+            url=api_settings.url_server + f"/tg-chat/{event.chat_id}",
         )
         match response.status_code:
-            case ResponseCode.SUCCESS.value:
+            case status.HTTP_200_OK:
                 message = "Чат зарегистрирован!\nДля добавления ссылки введите /track"
-            case ResponseCode.ALREADY_REPORTED.value:
+            case status.HTTP_208_ALREADY_REPORTED:
                 message = "Чат уже зарегистрирован\nДля добавления ссылки введите /track"
-            case ResponseCode.SERVER_ERROR.value:
+            case status.HTTP_500_INTERNAL_SERVER_ERROR:
                 message = "Проблема на сервере"
-            case ResponseCode.VALIDATION_ERROR.value:
+            case status.HTTP_422_UNPROCESSABLE_ENTITY:
                 message = "Ошибка валидации"
             case _:
                 message = f"Неизвестная ошибка:{response.text}"

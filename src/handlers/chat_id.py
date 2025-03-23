@@ -2,7 +2,7 @@ import logging
 
 from telethon.events import NewMessage
 
-from src.data import user_states
+from src.handlers.handlers_settings import user_states
 
 __all__ = ("chat_id_cmd_handler",)
 logger = logging.getLogger(__name__)

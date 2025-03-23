@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 import validators
 from pydantic import BaseModel, field_validator
 
-from src.constants import MIN_LEN_PATH_PARTS
+from src.settings import MIN_LEN_PATH_PARTS
 
 
 def _validate_link(http_url: str) -> str:

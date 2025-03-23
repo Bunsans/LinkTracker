@@ -15,7 +15,6 @@ from telethon import TelegramClient
 from telethon.errors.rpcerrorlist import ApiIdInvalidError
 
 from src.api import router
-from src.constants import HOST_API_SERVER, PORT_API_SERVER, PREFIX_API_SERVER
 from src.data_classes import LinkUpdate
 from src.exceptions import EntityAlreadyExistsError, NotRegistratedChatError, ServiceError
 from src.exceptions.api_exceptions_handlers import (
@@ -26,8 +25,8 @@ from src.exceptions.api_exceptions_handlers import (
     validation_exception_handler,
 )
 from src.exceptions.exceptions import LinkNotFoundError
-from src.scrapper import scrapper
-from src.settings import TGBotSettings
+from src.scrapper.scrapper import scrapper
+from src.settings import APIServerSettings, TGBotSettings
 
 
 @asynccontextmanager
@@ -61,6 +60,7 @@ async def default_lifespan(application: FastAPI) -> AsyncIterator[None]:
     await loop.shutdown_default_executor()
 
 
+api_settings = APIServerSettings()
 app = FastAPI(
     title="telegram_bot_app",
     lifespan=default_lifespan,
@@ -72,7 +72,7 @@ app.exception_handler(NotRegistratedChatError)(not_registrated_chat_exception_ha
 app.exception_handler(LinkNotFoundError)(link_not_found_exception_handler)
 app.exception_handler(EntityAlreadyExistsError)(entity_already_exist_exception_handler)
 
-app.include_router(router=router, prefix=PREFIX_API_SERVER)
+app.include_router(router=router, prefix=api_settings.prefix_server)
 
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -104,10 +104,11 @@ async def main() -> None:
 
 
 async def run_server() -> None:
+
     config = uvicorn.Config(
         "server:app",
-        host=HOST_API_SERVER,
-        port=PORT_API_SERVER,
+        host=api_settings.host_server,
+        port=api_settings.port_server,
         log_level=os.getenv("LOGGING_LEVEL", "info").lower(),
         reload=True,
     )

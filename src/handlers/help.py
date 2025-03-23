@@ -1,6 +1,6 @@
 from telethon.events import NewMessage
 
-from src.data import user_states
+from src.handlers.handlers_settings import user_states
 from src.utils import send_message_from_bot
 
 __all__ = ("help_cmd_handler",)

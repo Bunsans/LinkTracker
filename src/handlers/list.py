@@ -1,9 +1,9 @@
 import httpx
+from fastapi import status
 from telethon.events import NewMessage
 
 from src.api.links.schemas import ListLinksResponse
-from src.constants import URL_API_SERVER, ResponseCode
-from src.data import user_states
+from src.handlers.handlers_settings import api_settings, user_states
 from src.utils import send_message_from_bot
 
 __all__ = ("list_cmd_handler",)
@@ -18,10 +18,10 @@ async def list_cmd_handler(
 
     async with httpx.AsyncClient() as client:
         response = await client.get(
-            url=URL_API_SERVER + "/links",
+            url=api_settings.url_server + "/links",
             headers={"tg-chat-id": str(event.chat_id)},
         )
-        if response.status_code == ResponseCode.SUCCESS.value:
+        if response.status_code == status.HTTP_200_OK:
             list_link_response = ListLinksResponse.model_validate_json(response.text)
             if not list_link_response.links:
                 message = "Список ссылок пуст"
@@ -32,9 +32,9 @@ async def list_cmd_handler(
                         for link in list_link_response.links
                     ],
                 )
-        elif response.status_code == ResponseCode.UNAUTHORIZED.value:
+        elif response.status_code == status.HTTP_401_UNAUTHORIZED:
             message = "Чат не зарегистрирован, для регистрации введите /start"
-        elif response.status_code == ResponseCode.SERVER_ERROR.value:
+        elif response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR:
             message = f"Ошибка сервера:\n{response.text}"
         else:
             message = "Неизвестная ошибка"

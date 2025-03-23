@@ -1,20 +1,13 @@
-import sys
-from typing import List
-
-from loguru import logger
-
 from src.api.links.schemas import AddLinkRequest, LinkResponse, ListLinksResponse, RemoveLinkRequest
-from src.data import chat_id_links_mapper, links_chat_id_mapper
-from src.exceptions import LinkNotFoundError, NotRegistratedChatError
+from src.data import link_service
 
 
 def get_links(tg_chat_id: int) -> ListLinksResponse:
-    logger.debug(f"Before: chat_id_links_mapper: {chat_id_links_mapper}")
-    if tg_chat_id not in chat_id_links_mapper:
-        raise NotRegistratedChatError(message="Not registrated chat. While getting links")
-    links = chat_id_links_mapper[tg_chat_id]
-    logger.debug(f"After: chat_id_links_mapper: {chat_id_links_mapper}")
-    return ListLinksResponse(links=links, size=sys.getsizeof(links))
+    """If tg_chat_id not in chat_id_links_mapper:
+       raise NotRegistratedChatError(message="Not registrated chat. While getting links")
+    links = chat_id_links_mapper[tg_chat_id].
+    """
+    return link_service.get_links(tg_chat_id)
 
 
 def add_link(
@@ -22,47 +15,14 @@ def add_link(
     link_request: AddLinkRequest,
 ) -> LinkResponse:
     """Добавить отслеживание ссылки."""
-    logger.debug(f"Before: chat_id_links_mapper: {chat_id_links_mapper}")
-    if tg_chat_id not in chat_id_links_mapper:
-        raise NotRegistratedChatError(message="Not registrated chat. While adding link")
-    list_links = chat_id_links_mapper[tg_chat_id]
-    # link_request : AddLinkRequest -> link_response LinkResponse
-    link_response = LinkResponse(
-        id=tg_chat_id,
-        link=link_request.link,
-        tags=link_request.tags,
-        filters=link_request.filters,
-    )
-    for link_ in list_links:
-        if link_response.link == link_.link:
-            list_links.remove(link_)
-
-    list_links.append(link_response)
-    chat_id_links_mapper[tg_chat_id] = list_links
-
-    if link_response.link not in links_chat_id_mapper:
-        links_chat_id_mapper[link_response.link] = {tg_chat_id}
-    else:
-        list_ids = links_chat_id_mapper[link_response.link]
-        list_ids.add(tg_chat_id)
-        links_chat_id_mapper[link_response.link] = list_ids
-
-    logger.debug(f"Before: chat_id_links_mapper: {chat_id_links_mapper}")
-    return LinkResponse(
-        id=tg_chat_id,
-        link=link_request.link,
-        tags=link_request.tags,
-        filters=link_request.filters,
-    )
+    return link_service.add_link(tg_chat_id, link_request)
 
 
 def remove_link(
     tg_chat_id: int,
     link_request: RemoveLinkRequest,
 ) -> LinkResponse:
-    """Убрать отслеживание ссылки."""
-    logger.debug(f"Before: chat_id_links_mapper: {chat_id_links_mapper}")
-
+    """Убрать отслеживание ссылки.
     if tg_chat_id not in chat_id_links_mapper:
         raise NotRegistratedChatError(message="Not registrated chat.")
     logger.debug(f"Before: links_chat_id_mapper: {links_chat_id_mapper}")
@@ -84,8 +44,6 @@ def remove_link(
                 link=link_request.link,
                 tags=link_.tags,
                 filters=link_.filters,
-            )
-    logger.debug(f"After: chat_id_links_mapper: {chat_id_links_mapper}")
-    raise LinkNotFoundError(
-        message="Link not found. While trying to remove it.",
-    )  # HTTPException(status_code=404, detail="Ссылка не найдена")
+            ).
+    """
+    return link_service.remove_link(tg_chat_id, link_request)
