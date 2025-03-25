@@ -17,7 +17,7 @@ from src.handlers.list import list_cmd_handler
     [
         (
             State(state=STATE_TAGS, link="https://example.com"),
-            f"Ошибка сервера:\n{"ошибка"}",
+            "Ошибка сервера:\nошибка",
             "ошибка",
             500,
         ),
