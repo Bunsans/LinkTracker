@@ -12,6 +12,7 @@ from src.handlers.handlers_settings import (
 from src.handlers.start import start_cmd_handler
 
 
+@pytest.mark.usefixtures("mock_event")
 @pytest.mark.parametrize(
     ("init_state", "expected_message_reply", "response_code"),
     [
