@@ -5,6 +5,7 @@ import pytest
 from src.handlers import chat_id_cmd_handler
 
 
+@pytest.mark.usefixtures("mock_event")
 @pytest.mark.asyncio
 async def test_chat_id_cmd_handler(mock_event: Mock) -> None:
     await chat_id_cmd_handler(mock_event)
