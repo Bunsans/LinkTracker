@@ -23,7 +23,7 @@ async def track_cmd_handler(
 ) -> None:
     if not await is_chat_registrated(event):
         return
-    message = event.message
+    message = event.raw_text
     args = message.split()
     user_id = event.chat_id
 

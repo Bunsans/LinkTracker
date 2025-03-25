@@ -18,7 +18,7 @@ async def untrack_cmd_handler(
 
     if not await is_chat_registrated(event):
         return
-    message = event.message.message
+    message = event.raw_text
     args = message.split()
     chat_id = event.chat_id
     if len(args) == 1:

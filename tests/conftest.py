@@ -18,6 +18,7 @@ def mock_event() -> Mock:
     event.input_chat = "test_chat"
     event.chat_id = 1
     event.message = "/chat_id"
+    event.raw_text = "/chat_id"
     event.client = MagicMock(spec=TelegramClient)
     return event
 

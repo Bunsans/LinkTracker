@@ -1,5 +1,6 @@
 import httpx
 from fastapi import status
+from loguru import logger
 from telethon.events import NewMessage
 
 from src.api.links.schemas import ListLinksResponse
@@ -28,10 +29,13 @@ async def list_cmd_handler(
             else:
                 message = "\n".join(
                     [
-                        f"Url: {link.link}\nTags: {link.tags}\nFilters: {link.filters}\n"
+                        f"""Url: {link.link}
+Tags: {', '.join(link.tags)}
+Filters: {', '.join(link.filters)}\n"""
                         for link in list_link_response.links
                     ],
                 )
+                logger.debug(f"#####{message}#####")
         elif response.status_code == status.HTTP_401_UNAUTHORIZED:
             message = "Чат не зарегистрирован, для регистрации введите /start"
         elif response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR:

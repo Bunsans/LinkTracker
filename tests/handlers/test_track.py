@@ -37,7 +37,7 @@ async def test_track_cmd_handler_init_track(
     mock_response = MagicMock()
     mock_response.status_code = 200
     with patch("httpx.AsyncClient.get", return_value=mock_response):
-        mock_event.message = message_text
+        mock_event.raw_text = message_text
         await track_cmd_handler(mock_event)
         mock_event.client.send_message.assert_called_with(
             entity=mock_event.input_chat,
