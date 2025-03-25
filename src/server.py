@@ -60,7 +60,7 @@ async def default_lifespan(application: FastAPI) -> AsyncIterator[None]:
     await loop.shutdown_default_executor()
 
 
-api_settings = APIServerSettings()
+api_settings = APIServerSettings()  # type: ignore[attr-defined,call-arg]
 app = FastAPI(
     title="telegram_bot_app",
     lifespan=default_lifespan,
