@@ -5,18 +5,11 @@ from unittest.mock import MagicMock, Mock
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from httpx import AsyncClient
 from telethon import TelegramClient
 from telethon.events import NewMessage
 
 from src.api import router
 from src.server import default_lifespan
-
-
-@pytest.fixture
-def httpx_client_mock():
-    client = MagicMock(spec=AsyncClient)
-    return client
 
 
 @pytest.fixture(scope="session")

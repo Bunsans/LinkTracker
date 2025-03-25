@@ -23,17 +23,17 @@ async def track_cmd_handler(
 ) -> None:
     if not await is_chat_registrated(event):
         return
-    message = event.message.message
+    message = event.message
     args = message.split()
     user_id = event.chat_id
+
     if len(args) > 1:
-        await send_message_from_bot(event, "Введите тэги (опционально):")
         link = args[1]
         user_states[user_id] = State(state=STATE_TAGS, link=link)
+        await send_message_from_bot(event, "Введите тэги (опционально):")
     else:
-
-        await send_message_from_bot(event, "Введите ссылку для отслеживания:")
         user_states[user_id] = State(state=STATE_TRACK)
+        await send_message_from_bot(event, "Введите ссылку для отслеживания:")
 
 
 async def unknown_command_handler(event: NewMessage.Event) -> None:
