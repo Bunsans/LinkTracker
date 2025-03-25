@@ -72,7 +72,7 @@ app.exception_handler(NotRegistratedChatError)(not_registrated_chat_exception_ha
 app.exception_handler(LinkNotFoundError)(link_not_found_exception_handler)
 app.exception_handler(EntityAlreadyExistsError)(entity_already_exist_exception_handler)
 
-app.include_router(router=router, prefix=api_settings.prefix_server)
+app.include_router(router=router, prefix=api_settings.prefix_server)  # type: ignore[attr-defined]
 
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -107,8 +107,8 @@ async def run_server() -> None:
 
     config = uvicorn.Config(
         "server:app",
-        host=api_settings.host_server,
-        port=api_settings.port_server,
+        host=api_settings.host_server,  # type: ignore[attr-defined]
+        port=api_settings.port_server,  # type: ignore[attr-defined]
         log_level=os.getenv("LOGGING_LEVEL", "info").lower(),
         reload=True,
     )
