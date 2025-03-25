@@ -10,6 +10,7 @@ __all__ = ("TGBotSettings", "APIServerSettings")
 MIN_LEN_PATH_PARTS = 2
 LEN_OF_PARTS_GITHUB_URL = 2
 TIMEZONE = pytz.timezone("Europe/Moscow")
+PREFIX_API = "/api/v1"
 
 
 class TGBotSettings(BaseSettings):
@@ -33,7 +34,6 @@ class APIServerSettings(BaseSettings):
 
     host_server: str = Field(default=...)
     port_server: int = Field(default=...)
-    prefix_server: str = Field(default=...)
 
     model_config: typing.ClassVar[SettingsConfigDict] = SettingsConfigDict(
         extra="ignore",

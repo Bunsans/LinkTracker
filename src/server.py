@@ -26,7 +26,7 @@ from src.exceptions.api_exceptions_handlers import (
 )
 from src.exceptions.exceptions import LinkNotFoundError
 from src.scrapper.scrapper import scrapper
-from src.settings import APIServerSettings, TGBotSettings
+from src.settings import PREFIX_API, APIServerSettings, TGBotSettings
 
 
 @asynccontextmanager
@@ -60,7 +60,6 @@ async def default_lifespan(application: FastAPI) -> AsyncIterator[None]:
     await loop.shutdown_default_executor()
 
 
-api_settings = APIServerSettings()  # type: ignore[attr-defined,call-arg]
 app = FastAPI(
     title="telegram_bot_app",
     lifespan=default_lifespan,
@@ -72,7 +71,7 @@ app.exception_handler(NotRegistratedChatError)(not_registrated_chat_exception_ha
 app.exception_handler(LinkNotFoundError)(link_not_found_exception_handler)
 app.exception_handler(EntityAlreadyExistsError)(entity_already_exist_exception_handler)
 
-app.include_router(router=router, prefix=api_settings.prefix_server)  # type: ignore[attr-defined]
+app.include_router(router=router, prefix=PREFIX_API)  # type: ignore[attr-defined]
 
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -104,6 +103,7 @@ async def main() -> None:
 
 
 async def run_server() -> None:
+    api_settings = APIServerSettings()  # type: ignore[attr-defined,call-arg]
 
     config = uvicorn.Config(
         "server:app",
