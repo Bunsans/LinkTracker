@@ -34,6 +34,7 @@ class APIServerSettings(BaseSettings):
 
     host_server: str = Field(default=...)
     port_server: int = Field(default=...)
+    prefix_server: str = Field(default=PREFIX_API)
 
     model_config: typing.ClassVar[SettingsConfigDict] = SettingsConfigDict(
         extra="ignore",

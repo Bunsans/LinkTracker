@@ -71,7 +71,7 @@ app.exception_handler(NotRegistratedChatError)(not_registrated_chat_exception_ha
 app.exception_handler(LinkNotFoundError)(link_not_found_exception_handler)
 app.exception_handler(EntityAlreadyExistsError)(entity_already_exist_exception_handler)
 
-app.include_router(router=router, prefix=PREFIX_API)  # type: ignore[attr-defined]
+app.include_router(router=router, prefix=PREFIX_API)
 
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
