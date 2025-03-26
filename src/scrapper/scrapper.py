@@ -28,11 +28,13 @@ async def check_updates() -> None:
 
         github_client = GitHubClient(client)
         stackoverflow_client = StackOverflowClient(client)
-        # for test  await github_client.get_repo_last_updated("https://github.com/catboost/catboost")
-        # for test await stackoverflow_client.get_question_last_updated(79481727)
         chat_id_group_by_link = link_service.get_chat_id_group_by_link()
         for link, chat_ids in chat_id_group_by_link.items():
             type_link = check_type(url=link)
+            """ # try:
+            # except ValueError:
+            #     logger.warning(f"Invalid date format: {last_updated_str}")
+            #     last_updated = datetime.fromisoformat("2000-01-01 00:00:00+00:00")"""
             match type_link:
                 case "github":
                     last_updated = await github_client.get_last_update(link)
