@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
-from typing import Literal
+from typing import TYPE_CHECKING, Literal, Optional
 
 import httpx
 from fastapi import status
@@ -9,60 +9,108 @@ from loguru import logger
 from src.data import link_service
 from src.data_classes import LinkUpdate
 from src.scrapper.clients import GitHubClient, StackOverflowClient
-from src.settings import TIMEZONE
+from src.settings import TIMEZONE, APIServerSettings
+
+if TYPE_CHECKING:
+    from src.repository.link_service import LinkService
+
+api_settings = APIServerSettings()
 
 
-def check_type(url: str) -> Literal["github", "stackoverflow"] | None:
-    if "github" in url:
-        return "github"
-    if "stackoverflow" in url:
-        return "stackoverflow"
-    return None
+class Scrapper:
+    def __init__(self) -> None:
+        self.github_client = GitHubClient()
+        self.stackoverflow_client = StackOverflowClient()
+        self.link_service: LinkService = link_service
 
+    def _get_type_link(self, link: str) -> Literal["github", "stackoverflow"] | None:
+        if link.startswith("https://github.com/"):
+            return "github"
+        elif link.startswith("https://stackoverflow.com/"):
+            return "stackoverflow"
+        else:
+            raise ValueError("Can't get type of link")
 
-# Функция для проверки обновлений
-async def check_updates() -> None:
-    async with httpx.AsyncClient() as client:
+    async def _get_last_update(
+        self,
+        link: str,
+        http_client: httpx.AsyncClient,
+    ) -> Optional[datetime]:
+        type_link = self._get_type_link(link=link)
+        match type_link:
+            case "github":
+                return await self.github_client.get_last_update(link, http_client)
+            case "stackoverflow":
+                return await self.stackoverflow_client.get_last_update(link, http_client)
+            case _:
+                return None
+
+    def _get_description_good(self, last_updated: datetime) -> str:
+        return f"Появилось обновление. Последнее в {last_updated.strftime('%Y-%m-%d %H:%M:%S')}"
+
+    def _get_description_none_last_update(self, link: str) -> str:
+        return f"Проблема при скраппинге обновления по ссылке: {link}"
+
+    def _get_description_error(self, link: str, e: Exception) -> str:
+        return f"Проблема при скраппинге обновления по ссылке: {link}\nОшибка:{e}"
+
+    async def get_description(
+        self,
+        link: str,
+        week_ago: datetime,
+        http_client: httpx.AsyncClient,
+    ) -> str:
+        try:
+            last_updated = await self._get_last_update(link, http_client)
+        except ConnectionError as error:
+            return self._get_description_error(link, error)
+        except ValueError as error:
+            return self._get_description_error(link, error)
+        else:
+            if last_updated is None:
+                return self._get_description_none_last_update(link)
+            if last_updated > week_ago:
+                return self._get_description_good(last_updated)
+        return self._get_description_none_last_update(link)
+
+    async def send_notification(
+        self,
+        link_update: LinkUpdate,
+        http_client: httpx.AsyncClient,
+    ) -> None:
+        response = await http_client.post(
+            url=api_settings.url_server + "/updates",
+            json=link_update.model_dump(),
+        )
+        if response.status_code == status.HTTP_200_OK:
+            logger.info("All send good")
+        else:
+            logger.warning(f"Something wrong\n{response.text}")
+
+    async def check_updates(self) -> None:
         current_time = datetime.now(TIMEZONE)
         week_ago = current_time - timedelta(days=7)
 
-        github_client = GitHubClient(client)
-        stackoverflow_client = StackOverflowClient(client)
-        chat_id_group_by_link = link_service.get_chat_id_group_by_link()
-        for link, chat_ids in chat_id_group_by_link.items():
-            type_link = check_type(url=link)
-            """ # try:
-            # except ValueError:
-            #     logger.warning(f"Invalid date format: {last_updated_str}")
-            #     last_updated = datetime.fromisoformat("2000-01-01 00:00:00+00:00")"""
-            match type_link:
-                case "github":
-                    last_updated = await github_client.get_last_update(link)
-                case "stackoverflow":
-                    last_updated = await stackoverflow_client.get_last_update(link)
-                case None:
-                    continue
-            if last_updated > week_ago:
-                body = LinkUpdate(
-                    id=1,
-                    link=link,
-                    description=f"Появилось обновление. Последнее в {last_updated}",
-                    tg_chat_ids=list(chat_ids),
-                )
-                logger.debug(body.model_dump())
-                response = await client.post(
-                    url="http://0.0.0.0:7777/updates",
-                    json=body.model_dump(),
-                )
-                if response.status_code == status.HTTP_200_OK:
-                    logger.info("good send")
-                else:
-                    logger.info(f"Something wrong\n{response.text}")
+        chat_id_group_by_link = self.link_service.get_chat_id_group_by_link()
+
+        async with httpx.AsyncClient() as http_client:
+            for link, chat_ids in chat_id_group_by_link.items():
+                description = self.get_description(link, week_ago, http_client)
+                if description:
+                    link_update = LinkUpdate(
+                        id=1,
+                        link=link,
+                        description=await description,
+                        tg_chat_ids=list(chat_ids),
+                    )
+                    logger.debug(link_update)
+                    await self.send_notification(link_update, http_client)
 
 
 async def scrapper() -> None:
+    scraper = Scrapper()
     while True:
-        await check_updates()
+        await scraper.check_updates()
         await asyncio.sleep(360)
 
 

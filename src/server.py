@@ -3,7 +3,6 @@ import os
 from collections.abc import AsyncIterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import AsyncExitStack, asynccontextmanager
-from typing import Optional
 
 import uvicorn
 from fastapi import Body, FastAPI
@@ -87,14 +86,10 @@ app.add_middleware(
 @app.post("/updates", status_code=200)
 async def updates(
     link_update: LinkUpdate = Body(..., description="Отправить обновление"),
-) -> Optional[str]:
+) -> str:
     tg_client = app.tg_client  # type: ignore[attr-defined]
-    logger.info(f"tg_client :{tg_client}")
     for chat_id in link_update.tg_chat_ids:
-        await tg_client.send_message(
-            entity=chat_id,
-            message=f"Обновление по ссылке: {link_update.link}\n{link_update.description}",
-        )
+        await tg_client.send_message(entity=chat_id, message=link_update.description)
     return "Обновление обработано"
 
 

@@ -11,9 +11,6 @@ class UpdateClientAbstract(ABC):
     API_NAME: str
     BASE_URL: str
 
-    def __init__(self, client: httpx.AsyncClient) -> None:
-        self.client = client
-
     @abstractmethod
     def parse_url(self, url: str) -> str:
         pass
@@ -22,9 +19,9 @@ class UpdateClientAbstract(ABC):
     def extract_last_update(self, response: httpx.Response) -> datetime:
         pass
 
-    async def get_last_update(self, url: str) -> datetime:
+    async def get_last_update(self, url: str, http_client: httpx.AsyncClient) -> datetime:
         url = self.parse_url(url)
-        response = await self.client.get(url)
+        response = await http_client.get(url)
         match response.status_code:
             case 404:
                 raise ConnectionError(f"{self.API_NAME} question not found")

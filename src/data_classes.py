@@ -2,7 +2,7 @@ from typing import List
 from urllib.parse import urlparse
 
 import validators
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field
 
 from src.settings import MIN_LEN_PATH_PARTS
 
@@ -27,10 +27,7 @@ def _validate_link(http_url: str) -> str:
 class LinkUpdate(BaseModel):
     id: int
     link: str
-    description: str
+    description: str = Field(
+        description="Message to users of update in link or error while scrapping",
+    )
     tg_chat_ids: List[int]
-
-    @field_validator("link", mode="before")
-    @classmethod
-    def validate_link(cls, http_url: str) -> str:
-        return _validate_link(http_url)

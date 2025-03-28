@@ -21,7 +21,7 @@ from src.settings import TIMEZONE
 )
 @pytest.mark.asyncio
 async def test_github_client_parse_url(url: str, expected_parsed_url: str) -> None:
-    client = GitHubClient(client=httpx.AsyncClient())
+    client = GitHubClient()
     url_result = client.parse_url(url)
     assert url_result == expected_parsed_url
 
@@ -37,7 +37,7 @@ async def test_github_client_parse_url(url: str, expected_parsed_url: str) -> No
 )
 @pytest.mark.asyncio
 async def test_github_client_parse_invalid_url(invalid_url: str) -> None:
-    client = GitHubClient(client=httpx.AsyncClient())
+    client = GitHubClient()
     with pytest.raises(ValueError, match="Invalid GitHub URL format"):
         client.parse_url(invalid_url)
 
@@ -61,7 +61,7 @@ async def test_github_client_extract_last_update_good(
 ) -> None:
     mock_response = MagicMock(spec=httpx.Response)
     mock_response.json.return_value = response_json
-    update_client = GitHubClient(client=httpx.AsyncClient())
+    update_client = GitHubClient()
     last_updated = update_client.extract_last_update(mock_response)
     assert last_updated == expected_last_update
 
@@ -86,7 +86,7 @@ async def test_github_client_extract_last_update_bad(
 ) -> None:
     mock_response = MagicMock(spec=httpx.Response)
     mock_response.json.return_value = response_json
-    update_client = GitHubClient(client=httpx.AsyncClient())
+    update_client = GitHubClient()
     with pytest.raises(expected_exception, match=expected_exception_message):
         update_client.extract_last_update(mock_response)
 
@@ -110,7 +110,7 @@ async def test_github_client_extract_last_update_bad(
 )
 @pytest.mark.asyncio
 async def test_stackoverflow_client_parse_url(url: str, expected_parsed_url: str) -> None:
-    client = StackOverflowClient(client=httpx.AsyncClient())
+    client = StackOverflowClient()
     url_result = client.parse_url(url)
     assert url_result == expected_parsed_url
 
@@ -125,7 +125,7 @@ async def test_stackoverflow_client_parse_url(url: str, expected_parsed_url: str
 )
 @pytest.mark.asyncio
 async def test_stackoverflow_client_parse_invalid_url(invalid_url: str) -> None:
-    client = StackOverflowClient(client=httpx.AsyncClient())
+    client = StackOverflowClient()
     with pytest.raises(ValueError, match="Invalid StackOverflow URL format"):
         client.parse_url(invalid_url)
 
@@ -148,7 +148,7 @@ async def test_stackoverflow_client_extract_last_update_good(
 ) -> None:
     mock_response = MagicMock(spec=httpx.Response)
     mock_response.json.return_value = response_json
-    update_client = StackOverflowClient(client=httpx.AsyncClient())
+    update_client = StackOverflowClient()
     last_updated = update_client.extract_last_update(mock_response)
     assert last_updated == expected_last_update
 
@@ -173,6 +173,6 @@ async def test_stackoverflow_client_extract_last_update_bad(
 ) -> None:
     mock_response = MagicMock(spec=httpx.Response)
     mock_response.json.return_value = response_json
-    update_client = StackOverflowClient(client=httpx.AsyncClient())
+    update_client = StackOverflowClient()
     with pytest.raises(expected_exception, match=expected_exception_message):
         update_client.extract_last_update(mock_response)
