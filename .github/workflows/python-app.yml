@@ -39,5 +39,7 @@ jobs:
         BOT_API_ID: 123456
         BOT_API_HASH: test
         BOT_TOKEN: test
+        API_HOST_SERVER: "0.0.0.0"
+        API_PORT_SERVER: 7777
       run: |
         make test
