@@ -32,8 +32,8 @@ class TGBotSettings(BaseSettings):
 class APIServerSettings(BaseSettings):
     debug: bool = Field(default=False)
 
-    host_server: str = Field(default=...)
-    port_server: int = Field(default=...)
+    host_server: str = Field(default="0.0.0.0")
+    port_server: int = Field(default=7777)
     prefix_server: str = Field(default=PREFIX_API)
 
     model_config: typing.ClassVar[SettingsConfigDict] = SettingsConfigDict(
