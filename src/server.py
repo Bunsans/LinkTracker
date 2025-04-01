@@ -83,7 +83,7 @@ app.add_middleware(
 )
 
 
-@app.post("/updates", status_code=200)
+@app.post(PREFIX_API + "/updates", status_code=200)
 async def updates(
     link_update: LinkUpdate = Body(..., description="Отправить обновление"),
 ) -> str:

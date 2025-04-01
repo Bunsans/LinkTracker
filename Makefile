@@ -36,3 +36,16 @@ sync:
 	git push --progress --porcelain task-3 refs/heads/master:master -f
 	git push --progress --porcelain task-4 refs/heads/master:master -f
 	git push --progress --porcelain task-5 refs/heads/master:master -f
+
+.PHONY: db
+db:
+	docker compose up -d pg
+
+
+.PHONY: server
+server:
+	$(RUN) python3 src/server.py
+
+.PHONY: bot
+bot:
+	$(RUN) python3 src/main.py

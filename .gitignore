@@ -117,3 +117,7 @@ venv
 
 # Examples for dev
 clients_examples_response_json/
+
+
+# Ignore files
+ignore/

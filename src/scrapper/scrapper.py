@@ -45,13 +45,16 @@ class Scrapper:
             case _:
                 return None
 
-    def _get_description_good(self, last_updated: datetime) -> str:
-        return f"Появилось обновление. Последнее в {last_updated.strftime('%Y-%m-%d %H:%M:%S')}"
+    def _get_description_good(self, link: str, last_updated: datetime) -> str:
+        return f"""Появилось обновление по ссылке {link}.
+Последнее в {last_updated.strftime('%Y-%m-%d %H:%M:%S')}"""
 
-    def _get_description_none_last_update(self, link: str) -> str:
-        return f"Проблема при скраппинге обновления по ссылке: {link}"
+    # if need notifie about
+    # not updated link: def _get_description_none_last_update(self, link: str) -> str:
+    # if need notifie about
+    # not updated link: return f"Нет обновлений по ссылке: {link}"
 
-    def _get_description_error(self, link: str, e: Exception) -> str:
+    def _get_description_error(self, link: str, e: Exception | str) -> str:
         return f"Проблема при скраппинге обновления по ссылке: {link}\nОшибка:{e}"
 
     async def get_description(
@@ -59,7 +62,7 @@ class Scrapper:
         link: str,
         week_ago: datetime,
         http_client: httpx.AsyncClient,
-    ) -> str:
+    ) -> Optional[str]:
         try:
             last_updated = await self._get_last_update(link, http_client)
         except ConnectionError as error:
@@ -68,10 +71,13 @@ class Scrapper:
             return self._get_description_error(link, error)
         else:
             if last_updated is None:
-                return self._get_description_none_last_update(link)
+                return self._get_description_error(link, "last update is None ")
             if last_updated > week_ago:
-                return self._get_description_good(last_updated)
-        return self._get_description_none_last_update(link)
+                return self._get_description_good(link, last_updated)
+
+        return None
+        # if need notifie about not
+        # updated link: return self._get_description_none_last_update(link)
 
     async def send_notification(
         self,
@@ -95,12 +101,13 @@ class Scrapper:
 
         async with httpx.AsyncClient() as http_client:
             for link, chat_ids in chat_id_group_by_link.items():
-                description = self.get_description(link, week_ago, http_client)
+                description = await self.get_description(link, week_ago, http_client)
+                logger.debug(f"Last update for {link} is {description}")
                 if description:
                     link_update = LinkUpdate(
                         id=1,
                         link=link,
-                        description=await description,
+                        description=description,
                         tg_chat_ids=list(chat_ids),
                     )
                     logger.debug(link_update)
@@ -111,7 +118,7 @@ async def scrapper() -> None:
     scraper = Scrapper()
     while True:
         await scraper.check_updates()
-        await asyncio.sleep(360)
+        await asyncio.sleep(30)
 
 
 if __name__ == "__main__":

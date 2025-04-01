@@ -29,8 +29,8 @@ Welcome to the **Backend Academy 2025 Python Template**! This repository serves 
 - [x]  Бот кидает ошибку, если команда неизвестна
 - [x] Тесты на happy path: добавление и удаление ссылок из репозитория
 - [x] Тест на добавление дубля ссылки
-- [ ]  Тесты для планировщика: обновление отправляется только пользователям, которые следят за ссылкой
-- [ ] Тесты на корректную обработку ошибок HTTP-запросов (некорректное тело, код) в клиентах
+- [x]  Тесты для планировщика: обновление отправляется только пользователям, которые следят за ссылкой
+- [x] Тесты на корректную обработку ошибок HTTP-запросов (некорректное тело, код) в клиентах
 - [x] Проверка форматирования команды /list
 
 
@@ -77,12 +77,12 @@ curl -sSL https://install.python-poetry.org | python3 -
 To start the application, use the following command:
 
 ```bash
-bash start.sh
+make bot
 ```
 
 In another terminal start server
 ```bash
-bash start_server.sh
+make server
 ```
 
 ## Testing

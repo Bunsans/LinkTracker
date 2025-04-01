@@ -47,3 +47,18 @@ class APIServerSettings(BaseSettings):
     @property
     def url_server(self) -> str:
         return f"http://{self.host_server}:{self.port_server}{self.prefix_server}"
+
+
+"""class DBSettings(BaseSettings):
+    url: PostgresDsn = Field(default=...)
+    model_config: typing.ClassVar[SettingsConfigDict] = SettingsConfigDict(
+        extra="ignore",
+        frozen=True,
+        case_sensitive=False,
+        env_file=Path(__file__).parent.parent / ".env",
+        env_prefix="BOT_",
+    )
+
+
+db_settings = DBSettings()  # type: ignore[attr-defined]
+"""
