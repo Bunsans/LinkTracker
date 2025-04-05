@@ -13,7 +13,7 @@ from src.handlers.handlers_settings import (
     user_states,
 )
 from src.handlers.is_chat_registrated import is_chat_registrated
-from src.utils import send_message_from_bot
+from src.utils.bot_utils import send_message_from_bot
 
 __all__ = ("track_cmd_handler", "message_handler")
 

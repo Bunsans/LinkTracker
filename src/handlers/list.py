@@ -5,7 +5,7 @@ from telethon.events import NewMessage
 
 from src.api.links.schemas import ListLinksResponse
 from src.handlers.handlers_settings import api_settings, user_states
-from src.utils import send_message_from_bot
+from src.utils.bot_utils import send_message_from_bot
 
 __all__ = ("list_cmd_handler",)
 

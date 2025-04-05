@@ -15,6 +15,8 @@ from telethon.errors.rpcerrorlist import ApiIdInvalidError
 
 from src.api import router
 from src.data_classes import LinkUpdate
+from src.db import db_helper
+from src.db.base import Base
 from src.exceptions import EntityAlreadyExistsError, NotRegistratedChatError, ServiceError
 from src.exceptions.api_exceptions_handlers import (
     entity_already_exist_exception_handler,
@@ -53,7 +55,11 @@ async def default_lifespan(application: FastAPI) -> AsyncIterator[None]:
             application.tg_client = await stack.enter_async_context(await client)  # type: ignore[attr-defined]
         except ApiIdInvalidError:
             logger.info("Working without telegram client inside.")
+
+        async with db_helper.engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
         yield
+        await db_helper.dispose()
         await stack.aclose()
 
     await loop.shutdown_default_executor()

@@ -5,7 +5,7 @@ from telethon.events import NewMessage
 
 from src.handlers.handlers_settings import api_settings, user_states
 from src.handlers.is_chat_registrated import is_chat_registrated
-from src.utils import send_message_from_bot
+from src.utils.bot_utils import send_message_from_bot
 
 __all__ = ("untrack_cmd_handler",)
 
