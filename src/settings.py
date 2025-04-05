@@ -55,7 +55,7 @@ class DBSettings(BaseSettings):
     echo_pool: bool = False
     pool_size: int = 5
     max_overflow: int = 10
-
+    # something for alembic
     naming_convention: dict[str, str] = {
         "ix": "ix_%(column_0_label)s",
         "uq": "uq_%(table_name)s_%(column_0_N_name)s",
@@ -71,3 +71,6 @@ class DBSettings(BaseSettings):
         env_file=Path(__file__).parent.parent / ".env",
         env_prefix="DB_",
     )
+
+
+db_settings = DBSettings()  # type: ignore[attr-defined]

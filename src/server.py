@@ -57,7 +57,7 @@ async def default_lifespan(application: FastAPI) -> AsyncIterator[None]:
             logger.info("Working without telegram client inside.")
 
         async with db_helper.engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+            await conn.run_sync(Base.metadata.drop_all)
         yield
         await db_helper.dispose()
         await stack.aclose()

@@ -1,5 +1,6 @@
 from typing import AsyncGenerator
 
+from loguru import logger
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -7,9 +8,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from src.settings import DBSettings
-
-db_settings = DBSettings()  # type: ignore[attr-defined]
+from src.settings import db_settings
 
 
 class DatabaseHelper:
