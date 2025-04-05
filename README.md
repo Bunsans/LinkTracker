@@ -2,7 +2,12 @@
 
 Welcome to the **Backend Academy 2025 Python Template**! This repository serves as a starting point for your Python projects, using **Poetry** for dependency management and packaging.
 
+## dev commands
+`docker compose up pg` -- поднять бд
 
+`alembic revision --autogenerate -m "Create chat and link tables"` -- создать миграцию
+
+`alembic upgrade head` -- применение миграции
 ## TODO
 
 - [x] Бот должен поддерживать следующие команды:
