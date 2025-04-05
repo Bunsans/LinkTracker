@@ -1,35 +1,35 @@
 import asyncio
-import logging
 import os
 from collections.abc import AsyncIterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import AsyncExitStack, asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI
-from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi import Body, FastAPI
 from fastapi.exceptions import RequestValidationError
+from loguru import logger
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
-from starlette.requests import Request
-from starlette.responses import Response
 from telethon import TelegramClient
 from telethon.errors.rpcerrorlist import ApiIdInvalidError
 
 from src.api import router
-from src.settings import TGBotSettings
-
-logger = logging.getLogger(__name__)
-
-
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> Response:
-    logger.exception("Invalid request data: %s", exc)
-    return await request_validation_exception_handler(request, exc)
+from src.data_classes import LinkUpdate
+from src.exceptions import EntityAlreadyExistsError, NotRegistratedChatError, ServiceError
+from src.exceptions.api_exceptions_handlers import (
+    entity_already_exist_exception_handler,
+    link_not_found_exception_handler,
+    not_registrated_chat_exception_handler,
+    server_error_exception_handler,
+    validation_exception_handler,
+)
+from src.exceptions.exceptions import LinkNotFoundError
+from src.scrapper.scrapper import scrapper
+from src.settings import PREFIX_API, APIServerSettings, TGBotSettings
 
 
 @asynccontextmanager
 async def default_lifespan(application: FastAPI) -> AsyncIterator[None]:
-
     logger.debug("Running application lifespan ...")
 
     loop = asyncio.get_event_loop()
@@ -65,11 +65,15 @@ app = FastAPI(
 )
 
 app.exception_handler(RequestValidationError)(validation_exception_handler)
+app.exception_handler(ServiceError)(server_error_exception_handler)
+app.exception_handler(NotRegistratedChatError)(not_registrated_chat_exception_handler)
+app.exception_handler(LinkNotFoundError)(link_not_found_exception_handler)
+app.exception_handler(EntityAlreadyExistsError)(entity_already_exist_exception_handler)
 
-app.include_router(router=router, prefix="/api/v1")
+app.include_router(router=router, prefix=PREFIX_API)
+
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -78,13 +82,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-if __name__ == "__main__":
-    logger = logging.getLogger(__name__)
-    logger.info("serving app on port: %d", 7777)
-    logger.info("http://0.0.0.0:7777/docs")
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=7777,
+
+@app.post(PREFIX_API + "/updates", status_code=200)
+async def updates(
+    link_update: LinkUpdate = Body(..., description="Отправить обновление"),
+) -> str:
+    tg_client = app.tg_client  # type: ignore[attr-defined]
+    for chat_id in link_update.tg_chat_ids:
+        await tg_client.send_message(entity=chat_id, message=link_update.description)
+    return "Обновление обработано"
+
+
+async def main() -> None:
+    await asyncio.gather(run_server(), scrapper())
+
+
+async def run_server() -> None:
+    api_settings = APIServerSettings()  # type: ignore[attr-defined,call-arg]
+
+    config = uvicorn.Config(
+        "server:app",
+        host=api_settings.host_server,  # type: ignore[attr-defined]
+        port=api_settings.port_server,  # type: ignore[attr-defined]
         log_level=os.getenv("LOGGING_LEVEL", "info").lower(),
+        reload=True,
     )
+    server = uvicorn.Server(config)
+    await server.serve()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

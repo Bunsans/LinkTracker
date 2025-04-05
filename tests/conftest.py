@@ -16,8 +16,9 @@ from src.server import default_lifespan
 def mock_event() -> Mock:
     event = Mock(spec=NewMessage.Event)
     event.input_chat = "test_chat"
-    event.chat_id = 123456789
+    event.chat_id = 1
     event.message = "/chat_id"
+    event.raw_text = "/chat_id"
     event.client = MagicMock(spec=TelegramClient)
     return event
 
