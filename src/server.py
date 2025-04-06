@@ -13,7 +13,8 @@ from starlette.middleware.gzip import GZipMiddleware
 from telethon import TelegramClient
 from telethon.errors.rpcerrorlist import ApiIdInvalidError
 
-from src.api import router
+from src.api import router_v1
+from src.api.api_v2 import router_v2
 from src.data_classes import LinkUpdate
 from src.db import db_helper
 from src.db.base import Base
@@ -57,7 +58,7 @@ async def default_lifespan(application: FastAPI) -> AsyncIterator[None]:
             logger.info("Working without telegram client inside.")
 
         async with db_helper.engine.begin() as conn:
-            await conn.run_sync(Base.metadata.drop_all)
+            await conn.run_sync(Base.metadata.create_all)
         yield
         await db_helper.dispose()
         await stack.aclose()
@@ -76,7 +77,8 @@ app.exception_handler(NotRegistratedChatError)(not_registrated_chat_exception_ha
 app.exception_handler(LinkNotFoundError)(link_not_found_exception_handler)
 app.exception_handler(EntityAlreadyExistsError)(entity_already_exist_exception_handler)
 
-app.include_router(router=router, prefix=PREFIX_API)
+# app.include_router(router=router_v1, prefix="/api/v1")
+app.include_router(router=router_v2, prefix="/api/v2")
 
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)

@@ -3,12 +3,7 @@ from typing import Any, Dict, List
 
 import pytest
 
-from src.api.links.schemas import (
-    AddLinkRequest,
-    LinkResponse,
-    ListLinksResponse,
-    RemoveLinkRequest,
-)
+from src.api.shemas import AddLinkRequest, LinkResponse, ListLinksResponse, RemoveLinkRequest
 from src.data_classes import LinkUpdate, _validate_link
 
 

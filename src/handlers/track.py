@@ -3,7 +3,7 @@ from fastapi import status
 from loguru import logger
 from telethon.events import NewMessage
 
-from src.api.links.schemas import AddLinkRequest
+from src.api.shemas import AddLinkRequest
 from src.handlers.handlers_settings import (
     STATE_FILTERS,
     STATE_TAGS,

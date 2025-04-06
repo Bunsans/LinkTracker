@@ -1,6 +1,5 @@
 from typing import AsyncGenerator
 
-from loguru import logger
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
