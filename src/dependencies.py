@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal
 
 from loguru import logger
 
@@ -7,7 +7,7 @@ from src.repository.link_services import AsyncLinkService, LinkService
 from src.repository.sync_.link_repository_local import LinkRepositoryLocal
 
 type_service: Literal["sync", "async"] = "async"
-type_repository: Optional[Literal["orm", "sql"]] = "orm"
+type_repository: Literal["orm", "sql"] | None = "orm"
 
 if type_service == "sync":
     link_repository = LinkRepositoryLocal()
@@ -18,6 +18,4 @@ else:
 
     link_service = AsyncLinkService(link_repository)
 
-logger.info(
-    f"Rung link service for type_service: {type_service}, type_repository:{type_repository}"
-)
+logger.info(f"Run link service for type_service: {type_service}, type_repository:{type_repository}")

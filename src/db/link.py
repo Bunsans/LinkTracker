@@ -1,15 +1,29 @@
-from sqlalchemy import JSON, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from datetime import datetime
+from typing import TYPE_CHECKING
+
+from sqlalchemy import DateTime, Integer, String, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 
+if TYPE_CHECKING:
+    from .chat import Chat
+    from .chat_link_association import ChatLinkAssociation
+
 
 class Link(Base):
-
-    chat_id: Mapped[int] = mapped_column(Integer, nullable=False)
     link: Mapped[str] = mapped_column(String)
-    tags: Mapped[list[str]] = mapped_column(JSON)
-    filters: Mapped[list[str]] = mapped_column(JSON)
+    count_chats: Mapped[int] = mapped_column(Integer, default=1)
+    last_update: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
 
-    def __repr__(self):
-        return f"<Link(id={self.id}, chat_id={self.chat_id}, link={self.link})>"
+    chats: Mapped[list["Chat"]] = relationship(
+        secondary="chat_link_associations",
+        back_populates="links",
+    )
+    chats_details: Mapped[list["ChatLinkAssociation"]] = relationship(
+        back_populates="link",
+        viewonly=True,
+    )

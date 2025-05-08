@@ -1,5 +1,3 @@
-from typing import Dict, List, Optional
-
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,15 +9,15 @@ from src.repository.link_repository_interfaces import LinkRepositoryInterface
 
 class LinkRepositoryLocal(LinkRepositoryInterface):
     def __init__(self) -> None:
-        self.chat_id_links_mapper: Dict[int, List[LinkResponse]] = {}
-        self.links_chat_id_mapper: Dict[str, set[int]] = {}
+        self.chat_id_links_mapper: dict[int, list[LinkResponse]] = {}
+        self.links_chat_id_mapper: dict[str, set[int]] = {}
 
-    def _is_chat_registrated(self, tg_chat_id: int, session: Optional[AsyncSession] = None) -> bool:
+    def _is_chat_registrated(self, tg_chat_id: int, session: AsyncSession | None = None) -> bool:
         if session:
             session = None
         return tg_chat_id in self.chat_id_links_mapper
 
-    def is_chat_registrated(self, tg_chat_id: int, session: Optional[AsyncSession] = None) -> bool:
+    def is_chat_registrated(self, tg_chat_id: int, session: AsyncSession | None = None) -> bool:
         if session:
             session = None
         if self._is_chat_registrated(tg_chat_id):
@@ -30,8 +28,8 @@ class LinkRepositoryLocal(LinkRepositoryInterface):
     def get_links(
         self,
         tg_chat_id: int,
-        session: Optional[AsyncSession] = None,
-    ) -> List[LinkResponse]:
+        session: AsyncSession | None = None,
+    ) -> list[LinkResponse]:
         if session:
             session = None
         if not self.is_chat_registrated(tg_chat_id):
@@ -42,7 +40,7 @@ class LinkRepositoryLocal(LinkRepositoryInterface):
         self,
         tg_chat_id: int,
         link_request: AddLinkRequest,
-        session: Optional[AsyncSession] = None,
+        session: AsyncSession | None = None,
     ) -> LinkResponse:
 
         if session:
@@ -76,7 +74,7 @@ class LinkRepositoryLocal(LinkRepositoryInterface):
         self,
         tg_chat_id: int,
         link_request: RemoveLinkRequest,
-        session: Optional[AsyncSession] = None,
+        session: AsyncSession | None = None,
     ) -> LinkResponse:
         if session:
             session = None
@@ -103,7 +101,7 @@ class LinkRepositoryLocal(LinkRepositoryInterface):
         logger.debug(f"After: chat_id_links_mapper: {self.chat_id_links_mapper}")
         raise LinkNotFoundError("Link not found.")
 
-    def register_chat(self, tg_chat_id: int, session: Optional[AsyncSession] = None) -> None:
+    def register_chat(self, tg_chat_id: int, session: AsyncSession | None = None) -> None:
         if session:
             session = None
         if self._is_chat_registrated(tg_chat_id):
@@ -114,7 +112,7 @@ class LinkRepositoryLocal(LinkRepositoryInterface):
         self.chat_id_links_mapper[tg_chat_id] = []
         logger.debug(f"After: chat_id_links_mapper: {self.chat_id_links_mapper}")
 
-    def delete_chat(self, tg_chat_id: int, session: Optional[AsyncSession] = None) -> None:
+    def delete_chat(self, tg_chat_id: int, session: AsyncSession | None = None) -> None:
         if session:
             session = None
         if not self.is_chat_registrated(tg_chat_id):
@@ -125,8 +123,8 @@ class LinkRepositoryLocal(LinkRepositoryInterface):
 
     def get_chat_id_group_by_link(
         self,
-        session: Optional[AsyncSession] = None,
-    ) -> Dict[str, set[int]]:
+        session: AsyncSession | None = None,
+    ) -> dict[str, set[int]]:
         if session:
             session = None
         return self.links_chat_id_mapper

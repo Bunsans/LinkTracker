@@ -1,4 +1,3 @@
-from typing import List
 from urllib.parse import urlparse
 
 import validators
@@ -27,8 +26,8 @@ def _validate_link(http_url: str) -> str:
 class LinkResponse(BaseModel):
     id: int
     link: str
-    tags: List[str]
-    filters: List[str]
+    tags: list[str]
+    filters: list[str]
 
     @field_validator("link", mode="before")
     @classmethod
@@ -41,13 +40,13 @@ class ApiErrorResponse(BaseModel):
     code: str
     exception_name: str
     exception_message: str
-    stacktrace: List[str]
+    stacktrace: list[str]
 
 
 class AddLinkRequest(BaseModel):
     link: str
-    tags: List[str]
-    filters: List[str]
+    tags: list[str]
+    filters: list[str]
 
     @field_validator("link", mode="before")
     @classmethod
@@ -56,7 +55,7 @@ class AddLinkRequest(BaseModel):
 
 
 class ListLinksResponse(BaseModel):
-    links: List[LinkResponse]
+    links: list[LinkResponse]
     size: int
 
 
@@ -73,7 +72,7 @@ class LinkUpdate(BaseModel):
     id: int
     link: str
     description: str
-    tg_chat_ids: List[int]
+    tg_chat_ids: list[int]
 
     @field_validator("link", mode="before")
     @classmethod

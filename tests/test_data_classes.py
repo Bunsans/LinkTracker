@@ -1,5 +1,5 @@
 import sys
-from typing import Any, Dict, List
+from typing import Any
 
 import pytest
 
@@ -56,7 +56,7 @@ def test_validate_link_invalid(invalid_url: str, expected_message: str) -> None:
         },
     ],
 )
-def test_link_response(data: Dict[str, Any]) -> None:
+def test_link_response(data: dict[str, Any]) -> None:
     link_response = LinkResponse(**data)
     assert link_response.id == data["id"]
     assert link_response.link == data["link"]
@@ -74,7 +74,7 @@ def test_link_response(data: Dict[str, Any]) -> None:
         },
     ],
 )
-def test_add_link_request(data: Dict[str, Any]) -> None:
+def test_add_link_request(data: dict[str, Any]) -> None:
     add_link_request = AddLinkRequest(**data)
     assert add_link_request.link == data["link"]
     assert add_link_request.tags == data["tags"]
@@ -82,7 +82,7 @@ def test_add_link_request(data: Dict[str, Any]) -> None:
 
 
 @pytest.mark.parametrize("data", [{"link": "https://github.com/owner/repo"}])
-def test_remove_link_request(data: Dict[str, Any]) -> None:
+def test_remove_link_request(data: dict[str, Any]) -> None:
     remove_link_request = RemoveLinkRequest(**data)
     assert remove_link_request.link == data["link"]
 
@@ -98,7 +98,7 @@ def test_remove_link_request(data: Dict[str, Any]) -> None:
         },
     ],
 )
-def test_link_update(data: Dict[str, Any]) -> None:
+def test_link_update(data: dict[str, Any]) -> None:
     link_update = LinkUpdate(**data)
     assert link_update.id == data["id"]
     assert link_update.link == data["link"]
@@ -148,7 +148,7 @@ def test_api_error_response(data: Dict[str, Any]) -> None:
         ],
     ],
 )
-def test_list_links_response(links_data: List[Dict[str, Any]]) -> None:
+def test_list_links_response(links_data: list[dict[str, Any]]) -> None:
     links = [LinkResponse(**link) for link in links_data]
     size = sys.getsizeof(links)
     list_links_response = ListLinksResponse(links=links, size=size)

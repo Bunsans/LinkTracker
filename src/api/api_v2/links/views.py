@@ -16,7 +16,9 @@ async def add_link(
 ) -> LinkResponse:
     """Добавить отслеживание ссылки."""
     return await link_service.add_link(
-        tg_chat_id=tg_chat_id, link_request=link_request, session=session
+        tg_chat_id=tg_chat_id,
+        link_request=link_request,
+        session=session,
     )
 
 

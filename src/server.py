@@ -13,7 +13,6 @@ from starlette.middleware.gzip import GZipMiddleware
 from telethon import TelegramClient
 from telethon.errors.rpcerrorlist import ApiIdInvalidError
 
-from src.api import router_v1
 from src.api.api_v2 import router_v2
 from src.data_classes import LinkUpdate
 from src.db import db_helper
@@ -77,7 +76,7 @@ app.exception_handler(NotRegistratedChatError)(not_registrated_chat_exception_ha
 app.exception_handler(LinkNotFoundError)(link_not_found_exception_handler)
 app.exception_handler(EntityAlreadyExistsError)(entity_already_exist_exception_handler)
 
-# app.include_router(router=router_v1, prefix="/api/v1")
+# was  app.include_router(router=router_v1, prefix="/api/v1")
 app.include_router(router=router_v2, prefix="/api/v2")
 
 

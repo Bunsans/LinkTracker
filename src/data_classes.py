@@ -1,4 +1,3 @@
-from typing import List
 from urllib.parse import urlparse
 
 import validators
@@ -30,4 +29,4 @@ class LinkUpdate(BaseModel):
     description: str = Field(
         description="Message to users of update in link or error while scrapping",
     )
-    tg_chat_ids: List[int]
+    tg_chat_ids: list[int]

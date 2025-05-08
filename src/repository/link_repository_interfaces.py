@@ -1,23 +1,25 @@
-from typing import Dict, List, Optional, Protocol
+from collections.abc import AsyncGenerator
+from typing import Protocol
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.shemas import AddLinkRequest, LinkResponse, RemoveLinkRequest
+from src.db.chat import Chat
 
 
 class LinkRepositoryInterface(Protocol):
     def get_links(
         self,
         tg_chat_id: int,
-        session: Optional[AsyncSession] = None,
-    ) -> List[LinkResponse]:
+        session: AsyncSession | None = None,
+    ) -> list[LinkResponse]:
         pass
 
     def add_link(
         self,
         tg_chat_id: int,
         link_request: AddLinkRequest,
-        session: Optional[AsyncSession] = None,
+        session: AsyncSession | None = None,
     ) -> LinkResponse:
         pass
 
@@ -25,39 +27,35 @@ class LinkRepositoryInterface(Protocol):
         self,
         tg_chat_id: int,
         link_request: RemoveLinkRequest,
-        session: Optional[AsyncSession] = None,
+        session: AsyncSession | None = None,
     ) -> LinkResponse:
         pass
 
-    def is_chat_registrated(self, tg_chat_id: int, session: Optional[AsyncSession] = None) -> bool:
+    def is_chat_registrated(self, tg_chat_id: int, session: AsyncSession | None = None) -> bool:
         pass
 
-    def register_chat(self, tg_chat_id: int, session: Optional[AsyncSession] = None) -> None:
+    def register_chat(self, tg_chat_id: int, session: AsyncSession | None = None) -> None:
         pass
 
-    def delete_chat(self, tg_chat_id: int, session: Optional[AsyncSession] = None) -> None:
+    def delete_chat(self, tg_chat_id: int, session: AsyncSession | None = None) -> None:
         pass
 
     def get_chat_id_group_by_link(
         self,
-        session: Optional[AsyncSession] = None,
-    ) -> Dict[str, set[int]]:
+        session: AsyncSession | None = None,
+    ) -> dict[str, set[int]]:
         pass
 
 
 class AcyncLinkRepositoryInterface(Protocol):
-    async def get_links(
-        self,
-        tg_chat_id: int,
-        session: Optional[AsyncSession] = None,
-    ) -> List[LinkResponse]:
+    async def get_links(self, tg_chat_id: int, session: AsyncSession) -> list[LinkResponse]:
         pass
 
     async def add_link(
         self,
         tg_chat_id: int,
         link_request: AddLinkRequest,
-        session: Optional[AsyncSession] = None,
+        session: AsyncSession,
     ) -> LinkResponse:
         pass
 
@@ -65,23 +63,22 @@ class AcyncLinkRepositoryInterface(Protocol):
         self,
         tg_chat_id: int,
         link_request: RemoveLinkRequest,
-        session: Optional[AsyncSession] = None,
+        session: AsyncSession,
     ) -> LinkResponse:
         pass
 
-    async def _is_chat_registrated(
-        self, tg_chat_id: int, session: Optional[AsyncSession] = None
-    ) -> bool:
+    async def is_chat_registrated(self, tg_chat_id: int, session: AsyncSession) -> Chat | None:
         pass
 
-    async def register_chat(self, tg_chat_id: int, session: Optional[AsyncSession] = None) -> None:
+    async def register_chat(self, tg_chat_id: int, session: AsyncSession) -> None:
         pass
 
-    async def delete_chat(self, tg_chat_id: int, session: Optional[AsyncSession] = None) -> None:
+    async def delete_chat(self, tg_chat_id: int, session: AsyncSession) -> None:
         pass
 
     async def get_chat_id_group_by_link(
         self,
-        session: Optional[AsyncSession] = None,
-    ) -> Dict[str, set[int]]:
+        session: AsyncSession,
+        batch_size: int = 100,
+    ) -> AsyncGenerator[dict[str, set[int]], None]:  # type: ignore
         pass
