@@ -89,10 +89,12 @@ class AsyncLinkService:
         await self._link_repository.delete_chat(tg_chat_id, session)
 
     async def get_chat_id_group_by_link(
-        self,
-        session: AsyncSession,
+        self, session: AsyncSession, batch_size: int
     ) -> AsyncGenerator[dict[str, set[int]], None]:
-        return await self._link_repository.get_chat_id_group_by_link(session)
+        async for batch in self._link_repository.get_chat_id_group_by_link(
+            session, batch_size=batch_size
+        ):
+            yield batch
 
     async def is_chat_registrated(self, tg_chat_id: int, session: AsyncSession) -> Chat | None:
         return await self._link_repository.is_chat_registrated(tg_chat_id, session)

@@ -11,6 +11,7 @@ MIN_LEN_PATH_PARTS = 2
 LEN_OF_PARTS_GITHUB_URL = 2
 TIMEZONE = pytz.timezone("Europe/Moscow")
 PREFIX_API = "/api/v1"
+BATCH_SIZE = 2
 
 
 class TGBotSettings(BaseSettings):

@@ -220,19 +220,47 @@ class LinkRepositoryORM(AcyncLinkRepositoryInterface):
 
 
 async def manual_test(session: AsyncSession) -> None:
-    tg_chat_id = 1
+    tg_chat_id = 2
     link_repository_orm = LinkRepositoryORM()
 
     await link_repository_orm.register_chat(tg_chat_id, session=session)
+    # await link_repository_orm.delete_chat(tg_chat_id, session=session)
+
+    # await link_repository_orm.add_link(
+    #     tg_chat_id,
+    #     AddLinkRequest(link=f"https://stackoverflow.com/questions/79612688", tags=[], filters=[]),
+    #     session,
+    # )
+    # await link_repository_orm.add_link(
+    #     tg_chat_id,
+    #     AddLinkRequest(link=f"https://stackoverflow.com/questions/79612667", tags=[], filters=[]),
+    #     session,
+    # )
+    # await link_repository_orm.add_link(
+    #     tg_chat_id,
+    #     AddLinkRequest(link=f"https://stackoverflow.com/questions/79612665", tags=[], filters=[]),
+    #     session,
+    # )
+    # await link_repository_orm.add_link(
+    #     tg_chat_id,
+    #     AddLinkRequest(link=f"https://stackoverflow.com/questions/79612613", tags=[], filters=[]),
+    #     session,
+    # )
+    # await link_repository_orm.add_link(
+    #     tg_chat_id,
+    #     AddLinkRequest(link=f"https://stackoverflow.com/questions/42393259", tags=[], filters=[]),
+    #     session,
+    # )
+    # await link_repository_orm.add_link(
+    #     tg_chat_id,
+    #     AddLinkRequest(link=f"https://stackoverflow.com/questions/56219834", tags=[], filters=[]),
+    #     session,
+    # )
 
 
-"""    for i in range(10):
-        await link_repository_orm.add_link(
-            tg_chat_id,
-            AddLinkRequest(link=f"https://github.com/owner/repo", tags=[], filters=[]),
-            session,
-        )
-
+"""   
+    for i in range(10):
+         
     res = await link_repository_orm.remove_link(
         tg_chat_id,
         link_request=RemoveLinkRequest(link="https://github.com/owner/repo"),
