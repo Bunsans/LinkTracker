@@ -25,3 +25,24 @@ class EntityAlreadyExistsError(LinkTrackerApiError):
 
 class LinkNotFoundError(LinkTrackerApiError):
     """link not found in the database."""
+
+
+class ExtractResponseError(Exception):
+    """base exception class."""
+
+    def __init__(
+        self,
+        message: str = "Service is unavailable",
+        name: str = "ScrapperClient",
+    ) -> None:
+        self.message = message
+        self.name = name
+        super().__init__(self.message, self.name)
+
+
+class StackOverflowExtractResponseError(ExtractResponseError):
+    """Problem with extracting info from response."""
+
+
+class GitHubExtractResponseError(ExtractResponseError):
+    """Problem with extracting info from response."""

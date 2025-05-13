@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Body, Header, Query
 
-from src.api.shemas import AddLinkRequest, LinkResponse, ListLinksResponse, RemoveLinkRequest
 from src.dependencies import link_service
+from src.schemas.schemas import AddLinkRequest, LinkResponse, ListLinksResponse, RemoveLinkRequest
 
 router = APIRouter(prefix="/links")
 

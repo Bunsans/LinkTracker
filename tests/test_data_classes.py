@@ -3,13 +3,24 @@ from typing import Any
 
 import pytest
 
-from src.api.shemas import AddLinkRequest, LinkResponse, ListLinksResponse, RemoveLinkRequest
-from src.data_classes import LinkUpdate, _validate_link
+from src.data_classes import LinkUpdate
+from src.schemas.schemas import (
+    AddLinkRequest,
+    LinkResponse,
+    ListLinksResponse,
+    RemoveLinkRequest,
+    _validate_link,
+)
 
 
 @pytest.mark.parametrize(
     "valid_url",
-    ["https://github.com/owner/repo", "https://stackoverflow.com/questions/123456"],
+    [
+        "https://github.com/owner/repo",
+        "https://github.com/owner/repo/pull",
+        "https://github.com/owner/repo/issues",
+        "https://stackoverflow.com/questions/123456",
+    ],
 )
 def test_validate_link_valid(valid_url: str) -> None:
     assert _validate_link(valid_url) == valid_url

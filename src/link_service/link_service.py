@@ -2,12 +2,9 @@ from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.shemas import AddLinkRequest, LinkResponse, ListLinksResponse, RemoveLinkRequest
-from src.db.chat import Chat
-from src.repository.link_repository_interfaces import (
-    AcyncLinkRepositoryInterface,
-    LinkRepositoryInterface,
-)
+from src.repository.async_.interface import AcyncLinkRepositoryInterface
+from src.repository.sync_.interface import LinkRepositoryInterface
+from src.schemas.schemas import AddLinkRequest, LinkResponse, ListLinksResponse, RemoveLinkRequest
 
 
 class LinkService:
@@ -89,12 +86,15 @@ class AsyncLinkService:
         await self._link_repository.delete_chat(tg_chat_id, session)
 
     async def get_chat_id_group_by_link(
-        self, session: AsyncSession, batch_size: int
-    ) -> AsyncGenerator[dict[str, set[int]], None]:
-        async for batch in self._link_repository.get_chat_id_group_by_link(
-            session, batch_size=batch_size
+        self,
+        session: AsyncSession,
+        batch_size: int,
+    ) -> AsyncGenerator[dict[str, list[int]], None]:
+        async for batch in self._link_repository.get_chat_id_group_by_link(  # type: ignore
+            session,
+            batch_size=batch_size,
         ):
             yield batch
 
-    async def is_chat_registrated(self, tg_chat_id: int, session: AsyncSession) -> Chat | None:
-        return await self._link_repository.is_chat_registrated(tg_chat_id, session)
+    async def is_chat_registrated(self, tg_chat_id: int, session: AsyncSession) -> bool:
+        return bool(await self._link_repository.is_chat_registrated(tg_chat_id, session))

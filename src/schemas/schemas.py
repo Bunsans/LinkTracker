@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 import validators
 from pydantic import BaseModel, field_validator
 
-from src.settings import MIN_LEN_PATH_PARTS
+from src.settings import MIN_LEN_PATH_PARTS, MIN_LEN_PATH_PARTS_STACKOVERFLOW
 
 
 def _validate_link(http_url: str) -> str:
@@ -13,9 +13,19 @@ def _validate_link(http_url: str) -> str:
     netloc = parsed_url.netloc
     path_parts = parsed_url.path.strip("/").split("/")
     if "github.com" in netloc:
-        if len(path_parts) < MIN_LEN_PATH_PARTS or not path_parts[0] or not path_parts[1]:
+        if (
+            len(path_parts) < MIN_LEN_PATH_PARTS - 1
+            or not path_parts[0]
+            or not path_parts[1]
+            or len(path_parts) > MIN_LEN_PATH_PARTS
+        ):
             raise ValueError("GitHub URL must contain both owner and repo")
+        if len(path_parts) == MIN_LEN_PATH_PARTS and path_parts[2] not in ["issues", "pull"]:
+            raise ValueError("GitHub URL must contain either issues or pull")
+
     elif "stackoverflow.com" in netloc:
+        if len(path_parts) != MIN_LEN_PATH_PARTS_STACKOVERFLOW:
+            raise ValueError("StackOverflow URL must contain a question number")
         if "questions" not in path_parts or not path_parts[-1].isdigit():
             raise ValueError("StackOverflow URL must contain a question number")
     else:

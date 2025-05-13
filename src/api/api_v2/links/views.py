@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Body, Depends, Header, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.shemas import AddLinkRequest, LinkResponse, ListLinksResponse, RemoveLinkRequest
 from src.db import db_helper
 from src.dependencies import link_service
+from src.schemas.schemas import AddLinkRequest, LinkResponse, ListLinksResponse, RemoveLinkRequest
 
 router = APIRouter(prefix="/links")
 
@@ -15,7 +15,7 @@ async def add_link(
     session: AsyncSession = Depends(db_helper.session_getter),
 ) -> LinkResponse:
     """Добавить отслеживание ссылки."""
-    return await link_service.add_link(
+    return await link_service.add_link(  # type: ignore
         tg_chat_id=tg_chat_id,
         link_request=link_request,
         session=session,
@@ -28,7 +28,7 @@ async def remove_link(
     link_request: RemoveLinkRequest = Query(..., description="Данные для удаления ссылки"),
     session: AsyncSession = Depends(db_helper.session_getter),
 ) -> LinkResponse:
-    return await link_service.remove_link(
+    return await link_service.remove_link(  # type: ignore
         tg_chat_id=tg_chat_id,
         link_request=link_request,
         session=session,
@@ -41,7 +41,8 @@ async def get_links(
     session: AsyncSession = Depends(db_helper.session_getter),
 ) -> ListLinksResponse:
     """Получить все отслеживаемые ссылки."""
-    return await link_service.get_links(
+    result = await link_service.get_links(  # type: ignore
         tg_chat_id,
         session,
-    )  # ListLinksResponse(links=links, size=sys.getsizeof(links))
+    )
+    return ListLinksResponse(links=result.links, size=result.size)

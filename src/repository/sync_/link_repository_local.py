@@ -1,10 +1,10 @@
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.shemas import AddLinkRequest, LinkResponse, RemoveLinkRequest
 from src.exceptions import LinkNotFoundError, NotRegistratedChatError
 from src.exceptions.exceptions import EntityAlreadyExistsError
-from src.repository.link_repository_interfaces import LinkRepositoryInterface
+from src.repository.sync_.interface import LinkRepositoryInterface
+from src.schemas.schemas import AddLinkRequest, LinkResponse, RemoveLinkRequest
 
 
 class LinkRepositoryLocal(LinkRepositoryInterface):

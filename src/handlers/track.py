@@ -3,7 +3,6 @@ from fastapi import status
 from loguru import logger
 from telethon.events import NewMessage
 
-from src.api.shemas import AddLinkRequest
 from src.handlers.handlers_settings import (
     STATE_FILTERS,
     STATE_TAGS,
@@ -13,6 +12,7 @@ from src.handlers.handlers_settings import (
     user_states,
 )
 from src.handlers.is_chat_registrated import is_chat_registrated
+from src.schemas.schemas import AddLinkRequest
 from src.utils.bot_utils import send_message_from_bot
 
 __all__ = ("track_cmd_handler", "message_handler")

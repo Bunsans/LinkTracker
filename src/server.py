@@ -26,7 +26,6 @@ from src.exceptions.api_exceptions_handlers import (
     validation_exception_handler,
 )
 from src.exceptions.exceptions import LinkNotFoundError
-from src.scrapper.scrapper import scrapper
 from src.settings import PREFIX_API, APIServerSettings, TGBotSettings
 
 
@@ -101,7 +100,7 @@ async def updates(
 
 
 async def main() -> None:
-    await asyncio.gather(run_server(), scrapper())
+    await asyncio.gather(run_server())  # , scrapper())
 
 
 async def run_server() -> None:

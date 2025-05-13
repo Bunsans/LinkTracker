@@ -1,9 +1,9 @@
 import pytest
 
-from src.api.shemas import AddLinkRequest, LinkResponse, RemoveLinkRequest
 from src.exceptions import LinkNotFoundError, NotRegistratedChatError
 from src.exceptions.exceptions import EntityAlreadyExistsError
 from src.repository.sync_.link_repository_local import LinkRepositoryLocal
+from src.schemas.schemas import AddLinkRequest, LinkResponse, RemoveLinkRequest
 
 
 @pytest.fixture

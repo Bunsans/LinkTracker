@@ -6,12 +6,30 @@ from pydantic import Field, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 __all__ = ("TGBotSettings", "APIServerSettings")
-
-MIN_LEN_PATH_PARTS = 2
+MIN_LEN_PATH_PARTS_STACKOVERFLOW = 2
+MIN_LEN_PATH_PARTS = 3
 LEN_OF_PARTS_GITHUB_URL = 2
 TIMEZONE = pytz.timezone("Europe/Moscow")
-PREFIX_API = "/api/v1"
+PREFIX_API = "/api/v2"
 BATCH_SIZE = 2
+BODY_MAX_LEN = 200
+TITLE_MAX_LEN = 100
+
+
+class ScrapperSettings(BaseSettings):
+    stack_query: str = Field(default="?order=desc&sort=activity&site=stackoverflow&filter=withbody")
+    github_token: str | None = Field(default=None)
+    batch_size: int = Field(default=BATCH_SIZE)
+    body_max_len: int = Field(default=BODY_MAX_LEN)
+    title_max_len: int = Field(default=TITLE_MAX_LEN)
+
+    model_config: typing.ClassVar[SettingsConfigDict] = SettingsConfigDict(
+        extra="ignore",
+        frozen=True,
+        case_sensitive=False,
+        env_file=Path(__file__).parent.parent / ".env",
+        env_prefix="SCRAPPER_",
+    )
 
 
 class TGBotSettings(BaseSettings):
@@ -75,3 +93,4 @@ class DBSettings(BaseSettings):
 
 
 db_settings = DBSettings()  # type: ignore[attr-defined]
+PERIOD_OF_CHECK_SECONDS = 60 * 60

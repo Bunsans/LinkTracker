@@ -6,7 +6,6 @@ from sqlalchemy import and_, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.api.shemas import AddLinkRequest, LinkResponse, RemoveLinkRequest
 from src.db import db_helper
 from src.db.chat import Chat
 from src.db.chat_link_association import ChatLinkAssociation
@@ -16,7 +15,8 @@ from src.exceptions.exceptions import (
     LinkNotFoundError,
     NotRegistratedChatError,
 )
-from src.repository.link_repository_interfaces import AcyncLinkRepositoryInterface
+from src.repository.async_.interface import AcyncLinkRepositoryInterface
+from src.schemas.schemas import AddLinkRequest, LinkResponse, RemoveLinkRequest
 
 
 class LinkRepositoryORM(AcyncLinkRepositoryInterface):
@@ -44,7 +44,6 @@ class LinkRepositoryORM(AcyncLinkRepositoryInterface):
         chat = await self.is_chat_registrated(tg_chat_id, session=session)
         if chat is None:
             raise NotRegistratedChatError("Not registrated chat.")
-
         result = await session.execute(
             select(ChatLinkAssociation)
             .options(selectinload(ChatLinkAssociation.link))
@@ -78,7 +77,29 @@ class LinkRepositoryORM(AcyncLinkRepositoryInterface):
             )
             session.add(link)
         else:
-            link.count_chats += 1
+            result = await session.execute(
+                select(ChatLinkAssociation).where(
+                    and_(
+                        ChatLinkAssociation.chat_id == chat.id,
+                        ChatLinkAssociation.link_id == link.id,
+                    ),
+                ),
+            )
+            chat_link_association = result.scalar_one_or_none()
+            if chat_link_association:
+                # check for association, if exists - change tags and filters
+                chat_link_association.tags = link_request.tags
+                chat_link_association.filters = link_request.filters
+                session.add(chat_link_association)
+                await session.commit()
+                return LinkResponse(
+                    id=link.id,
+                    link=link.link,
+                    tags=chat_link_association.tags,
+                    filters=chat_link_association.filters,
+                )
+            else:
+                link.count_chats += 1
         await session.commit()  # To get the link_id
         await session.refresh(link)  # To get the link_id
 
@@ -185,11 +206,11 @@ class LinkRepositoryORM(AcyncLinkRepositoryInterface):
         await session.execute(delete(Chat).where(Chat.id == chat.id))
         await session.commit()
 
-    async def get_chat_id_group_by_link(
+    async def get_chat_id_group_by_link(  # type: ignore
         self,
         session: AsyncSession,
         batch_size: int = 2,
-    ) -> AsyncGenerator[dict[str, set[int]], None]:  # type: ignore
+    ) -> AsyncGenerator[dict[str, list[int]], None]:  # type: ignore
         last_id = 0
         while True:
             result = await session.execute(
@@ -210,22 +231,23 @@ class LinkRepositoryORM(AcyncLinkRepositoryInterface):
 
             last_id = links[-1].id
             yield {
-                link.link: {
+                link.link: [
                     assoc.chat.tg_chat_id
                     for assoc in link.chats_details
                     if assoc.chat  # Защита от возможных None
-                }
+                ]
                 for link in links
             }
 
 
 async def manual_test(session: AsyncSession) -> None:
-    tg_chat_id = 2
+    tg_chat_id = 1
     link_repository_orm = LinkRepositoryORM()
 
-    await link_repository_orm.register_chat(tg_chat_id, session=session)
-    # await link_repository_orm.delete_chat(tg_chat_id, session=session)
+    # was await link_repository_orm.register_chat(tg_chat_id, session=session)
+    await link_repository_orm.delete_chat(tg_chat_id, session=session)
 
+    """
     # await link_repository_orm.add_link(
     #     tg_chat_id,
     #     AddLinkRequest(link=f"https://stackoverflow.com/questions/79612688", tags=[], filters=[]),
@@ -255,12 +277,11 @@ async def manual_test(session: AsyncSession) -> None:
     #     tg_chat_id,
     #     AddLinkRequest(link=f"https://stackoverflow.com/questions/56219834", tags=[], filters=[]),
     #     session,
-    # )
+    # )"""
 
 
-"""   
+"""
     for i in range(10):
-         
     res = await link_repository_orm.remove_link(
         tg_chat_id,
         link_request=RemoveLinkRequest(link="https://github.com/owner/repo"),
@@ -278,7 +299,6 @@ async def manual_test(session: AsyncSession) -> None:
         for link, chat_ids in batch.items():
             logger.debug(f"Link: {link}")
             logger.debug(f"Chat IDs: {chat_ids}")
-
 """
 
 

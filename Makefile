@@ -49,3 +49,7 @@ server:
 .PHONY: bot
 bot:
 	$(RUN) python3 src/main.py
+
+.PHONY: scrapper
+scrapper:
+	$(RUN) python3 src/scrapper/scrapper.py
