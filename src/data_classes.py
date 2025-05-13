@@ -1,9 +1,4 @@
-from urllib.parse import urlparse
-
-import validators
 from pydantic import BaseModel, Field
-
-from src.settings import MIN_LEN_PATH_PARTS
 
 
 class LinkUpdate(BaseModel):

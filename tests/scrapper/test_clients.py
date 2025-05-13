@@ -1,11 +1,7 @@
-from datetime import datetime
-from unittest.mock import MagicMock
-
-import httpx
 import pytest
 
 from src.scrapper.clients import GitHubClient, StackOverflowClient
-from src.settings import TIMEZONE, ScrapperSettings
+from src.settings import ScrapperSettings
 
 scrapper_settings = ScrapperSettings()
 
