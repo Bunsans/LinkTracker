@@ -1,6 +1,8 @@
 import asyncio
 import logging
 
+from fastapi import FastAPI
+
 from src.bot import make_tg_client
 from src.settings import TGBotSettings
 

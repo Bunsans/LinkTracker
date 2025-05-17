@@ -1,12 +1,10 @@
 """Module for scraping and checking updates from GitHub and StackOverflow links."""
 
 import asyncio
-from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Literal
 
 import httpx
-from fastapi import status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,53 +13,13 @@ from src.db import db_helper
 from src.dependencies import link_service
 from src.exceptions.exceptions import ExtractResponseError
 from src.scrapper.clients import GitHubClient, StackOverflowClient
+from src.scrapper.update_notifier import HTTPUpdateNotifier
 from src.settings import BATCH_SIZE, PERIOD_OF_CHECK_SECONDS, TIMEZONE, APIServerSettings
 
 if TYPE_CHECKING:
     from src.link_service.link_service import AsyncLinkService, LinkService
 
 api_settings = APIServerSettings()
-
-
-class AbstractUpdateNotifier(ABC):
-    """Abstract base class for update notifiers."""
-
-    @abstractmethod
-    async def send_notification(
-        self,
-        link_updates: list[LinkUpdate],
-    ) -> None:
-        """Send notifications about link updates.
-
-        Args:
-            link_updates: List of LinkUpdate objects containing update information.
-
-        """
-
-
-class UpdateNotifier(AbstractUpdateNotifier):
-    """Concrete implementation of AbstractUpdateNotifier for sending update notifications."""
-
-    async def send_notification(
-        self,
-        link_updates: list[LinkUpdate],
-    ) -> None:
-        """Send notifications about link updates to the API server.
-
-        Args:
-            link_updates: List of LinkUpdate objects containing update information.
-
-        """
-        async with httpx.AsyncClient() as http_client:
-            for link_update in link_updates:
-                response = await http_client.post(
-                    url=api_settings.url_server + "/updates",
-                    json=link_update.model_dump(),
-                )
-                if response.status_code == status.HTTP_200_OK:
-                    logger.success("All send good")
-                else:
-                    logger.warning(f"Something wrong\n{response.text}")
 
 
 class Scrapper:
@@ -72,7 +30,7 @@ class Scrapper:
         self.github_client = GitHubClient()
         self.stackoverflow_client = StackOverflowClient()
         self.link_service: LinkService | AsyncLinkService = link_service
-        self.update_notifier = UpdateNotifier()
+        self.update_notifier = HTTPUpdateNotifier()
 
     def _get_type_link(self, link: str) -> Literal["github", "stackoverflow"] | None:
         """Determine the type of link (GitHub or StackOverflow).
