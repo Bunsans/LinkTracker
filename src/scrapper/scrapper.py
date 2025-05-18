@@ -13,13 +13,20 @@ from src.db import db_helper
 from src.dependencies import link_service
 from src.exceptions.exceptions import ExtractResponseError
 from src.scrapper.clients import GitHubClient, StackOverflowClient
-from src.scrapper.update_notifier import HTTPUpdateNotifier
-from src.settings import BATCH_SIZE, PERIOD_OF_CHECK_SECONDS, TIMEZONE, APIServerSettings
+from src.scrapper.update_notifier import AbstractUpdateNotifier, NotifierFactory
+from src.settings import (
+    BATCH_SIZE,
+    PERIOD_OF_CHECK_SECONDS,
+    TIMEZONE,
+    APIServerSettings,
+    MessageBrokerSettings,
+)
 
 if TYPE_CHECKING:
     from src.link_service.link_service import AsyncLinkService, LinkService
 
 api_settings = APIServerSettings()
+message_broker_settings = MessageBrokerSettings()
 
 
 class Scrapper:
@@ -27,10 +34,24 @@ class Scrapper:
 
     def __init__(self) -> None:
         """Initialize Scrapper with clients and services."""
+        self.curr_id = 0
         self.github_client = GitHubClient()
         self.stackoverflow_client = StackOverflowClient()
         self.link_service: LinkService | AsyncLinkService = link_service
-        self.update_notifier = HTTPUpdateNotifier()
+        self.update_notifier: AbstractUpdateNotifier = NotifierFactory.get_notifier(
+            type_=message_broker_settings.transport_type
+        )
+        logger.debug(f"update_notifier: {self.update_notifier}")
+
+    async def start(self) -> None:
+        if hasattr(self.update_notifier, "start"):
+            await self.update_notifier.start()
+            logger.debug(f"update_notifier: started")
+
+    async def stop(self) -> None:
+        if hasattr(self.update_notifier, "stop"):
+            await self.update_notifier.stop()
+            logger.debug(f"update_notifier: stopped")
 
     def _get_type_link(self, link: str) -> Literal["github", "stackoverflow"] | None:
         """Determine the type of link (GitHub or StackOverflow).
@@ -112,31 +133,35 @@ class Scrapper:
             async with httpx.AsyncClient() as http_client:
                 for link, chat_ids in chat_id_group_by_link.items():
                     description = await self.get_description(link, week_ago, http_client)
-                    logger.debug(
-                        f"""Last update for {link}:
-{description[:100] if isinstance(description, str) else None}""",
-                    )
+                    #                     logger.debug(
+                    #                         f"""Last update for {link}:
+                    # {description[:100] if isinstance(description, str) else None}""",
+                    #                     )
                     if description:
                         link_update = LinkUpdate(
-                            id=1,
+                            id=self.curr_id,
                             link=link,
                             description=description,
                             tg_chat_ids=chat_ids,
                         )
+                        self.curr_id += 1
                         link_updates.append(link_update)
-            await self.update_notifier.send_notification(link_updates)
+            await self.update_notifier.send_notifications(link_updates)
 
 
 async def scrapper() -> None:
     """Main scraper function that runs indefinitely to check for updates."""
     scraper = Scrapper()
-    async with db_helper.get_session() as session:
+    session = await anext(db_helper.session_getter())
+    await scraper.start()
+    try:
         while True:
-            try:
-                await scraper.check_updates(session)
-                await asyncio.sleep(PERIOD_OF_CHECK_SECONDS)
-            except Exception as e:  # noqa: BLE001, PERF203
-                logger.error(f"error while check updates\n\n{e}")
+            await scraper.check_updates(session)
+            await asyncio.sleep(PERIOD_OF_CHECK_SECONDS)
+    except Exception as e:
+        logger.error(f"error while check updates\n\n{e}")
+        await scraper.stop()
+        raise e
 
 
 if __name__ == "__main__":

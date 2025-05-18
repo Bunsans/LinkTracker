@@ -1,73 +1,107 @@
-from aiokafka import AIOKafkaProducer
-import json
-from src.settings import app_settings
-from src.struct_logger import StructuredLogger
-import datetime
+from __future__ import annotations
 
-logger = StructuredLogger("kafka_dlq_producer")
+import json
+from dataclasses import asdict
+from datetime import datetime
+from typing import Any, Dict, Optional
+
+from aiokafka import AIOKafkaProducer
+from loguru import logger
+from pydantic import BaseModel
+
+from src.settings import TIMEZONE, MessageBrokerSettings
+
+kafka_settings = MessageBrokerSettings()
+
+
+class DLQMessage(BaseModel):
+    """Model for Dead Letter Queue messages."""
+
+    original_message: Dict[str, Any]
+    error: str
+    timestamp: str
+
 
 class KafkaDLQProducer:
-    def __init__(self):
-        self.producer = None
+    """Producer for sending failed messages to a Dead Letter Queue."""
 
-    async def start(self):
-        """Инициализация и запуск DLQ producer."""
-        self.producer = AIOKafkaProducer(
-            bootstrap_servers=app_settings.transport.kafka_bootstrap_servers,
-            security_protocol=app_settings.transport.kafka_security_protocol,
-            sasl_mechanism=app_settings.transport.kafka_sasl_mechanism,
-            sasl_plain_username=app_settings.transport.kafka_sasl_username,
-            sasl_plain_password=app_settings.transport.kafka_sasl_password
-        )
-        
-        try:
-            await self.producer.start()
-            logger.info("DLQ producer started successfully", event="dlq_producer_start")
-        except Exception as e:
-            logger.error(
-                "Failed to start DLQ producer",
-                event="dlq_producer_start_error",
-                error=str(e)
-            )
-            raise
+    def __init__(self) -> None:
+        """Initialize the DLQ producer."""
+        self._producer: Optional[AIOKafkaProducer] = None
+        self._dlq_topic = f"{kafka_settings.kafka_topic_notifications}.DLQ"
 
-    async def send_to_dlq(self, original_message, error_info: str):
-        """Отправка сообщения в DLQ топик."""
-        if not self.producer:
+    async def start(self) -> None:
+        """Initialize and start the DLQ producer."""
+        if self._producer is not None:
+            logger.warning("DLQ producer already started")
             return
 
-        dlq_message = {
-            "original_message": original_message,
-            "error": error_info,
-            "timestamp": datetime.datetime.now().isoformat()
-        }
+        try:
+            self._producer = AIOKafkaProducer(
+                bootstrap_servers=kafka_settings.kafka_bootstrap_servers,
+                security_protocol=kafka_settings.kafka_security_protocol,
+                sasl_mechanism=kafka_settings.kafka_sasl_mechanism,
+                sasl_plain_username=kafka_settings.kafka_sasl_username,
+                sasl_plain_password=kafka_settings.kafka_sasl_password,
+                value_serializer=self._serialize_message,
+            )
+
+            await self._producer.start()
+            logger.info(
+                "DLQ producer started successfully",
+                event="dlq_producer_started",
+                topic=self._dlq_topic,
+            )
+
+        except Exception as e:
+            logger.critical(f"Failed to start DLQ producer{e}")
+            raise RuntimeError("Failed to start DLQ producer") from e
+
+    async def send_to_dlq(self, original_message: Dict[str, Any], error_info: str) -> bool:
+        """Send a failed message to the Dead Letter Queue.
+
+        Args:
+            original_message: The original message that failed processing
+            error_info: Description of the failure reason
+
+        Returns:
+            bool: True if message was successfully delivered to DLQ
+        """
+        if self._producer is None:
+            logger.error("Cannot send to DLQ - producer not initialized")
+            return False
 
         try:
-            await self.producer.send_and_wait(
-                topic=f"{app_settings.transport.kafka_topic_notifications}.DLQ",
-                value=json.dumps(dlq_message).encode('utf-8')
-            )
-            logger.info(
-                "Message sent to DLQ",
-                event="dlq_message_sent",
-                error=error_info
-            )
-        except Exception as e:
-            logger.error(
-                "Failed to send message to DLQ",
-                event="dlq_send_error",
-                error=str(e)
+            dlq_message = DLQMessage(
+                original_message=original_message,
+                error=error_info,
+                timestamp=datetime.now(tz=TIMEZONE).isoformat(),
             )
 
-    async def stop(self):
-        """Остановка DLQ producer."""
-        if self.producer:
-            try:
-                await self.producer.stop()
-                logger.info("DLQ producer stopped", event="dlq_producer_stop")
-            except Exception as e:
-                logger.error(
-                    "Failed to stop DLQ producer",
-                    event="dlq_producer_stop_error",
-                    error=str(e)
-                ) 
+            await self._producer.send_and_wait(topic=self._dlq_topic, value=dlq_message)
+
+            logger.info(f"Message successfully sent to DLQ: {error_info[:100]}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to send message to DLQ: {error_info[:100]}\n\n{e}")
+            return False
+
+    async def stop(self) -> None:
+        """Gracefully stop the DLQ producer."""
+        if self._producer is None:
+            logger.warning("Attempted to stop non-existent producer")
+            return
+
+        try:
+            await self._producer.stop()
+            self._producer = None
+            logger.info("DLQ producer stopped successfully")
+        except Exception as e:
+            logger.error(f"Failed to stop DLQ producer{e}")
+            raise RuntimeError("Failed to stop DLQ producer") from e
+
+    @staticmethod
+    def _serialize_message(message: DLQMessage) -> bytes:
+        """Serialize DLQ message to bytes for Kafka."""
+        return json.dumps(asdict(message)).encode("utf-8")

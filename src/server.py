@@ -26,7 +26,14 @@ from src.exceptions.api_exceptions_handlers import (
     validation_exception_handler,
 )
 from src.exceptions.exceptions import LinkNotFoundError
-from src.settings import PREFIX_API, APIServerSettings, TGBotSettings
+from src.kafka.kafka_consumer import KafkaConsumerService
+from src.settings import (
+    PREFIX_API,
+    APIServerSettings,
+    MessageBrokerSettings,
+    TGBotSettings,
+    TransportType,
+)
 
 
 @asynccontextmanager
@@ -40,8 +47,7 @@ async def default_lifespan(application: FastAPI) -> AsyncIterator[None]:
         ),
     )
     application.settings = TGBotSettings()  # type: ignore[attr-defined,call-arg]
-
-    client = TelegramClient(
+    tg_client = TelegramClient(
         "fastapi_bot_session",
         application.settings.api_id,  # type: ignore[attr-defined]
         application.settings.api_hash,  # type: ignore[attr-defined]
@@ -49,17 +55,28 @@ async def default_lifespan(application: FastAPI) -> AsyncIterator[None]:
         bot_token=application.settings.token,  # type: ignore[attr-defined]
     )
 
+    kafka_settings = MessageBrokerSettings()  # type: ignore[attr-defined,call-arg]
+    kafka_consumer = KafkaConsumerService(tg_client=tg_client)  # type: ignore[attr-defined,call-arg]
+
     async with AsyncExitStack() as stack:
         try:
-            application.tg_client = await stack.enter_async_context(await client)  # type: ignore[attr-defined]
+            application.tg_client = await stack.enter_async_context(await tg_client)  # type: ignore[attr-defined]
         except ApiIdInvalidError:
             logger.info("Working without telegram client inside.")
 
         async with db_helper.engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+
+        if kafka_settings.transport_type == TransportType.kafka:
+            kafka_consumer = KafkaConsumerService(tg_client=application.tg_client)  # type: ignore[attr-defined,call-arg]
+            await kafka_consumer.setup()
+            asyncio.create_task(kafka_consumer.start_consuming())  # type: ignore[attr-defined,call-arg]
+            logger.info("Kafka consumer started successfully")
+
         yield
         await db_helper.dispose()
         await stack.aclose()
+        await kafka_consumer.stop()
 
     await loop.shutdown_default_executor()
 
