@@ -1,4 +1,3 @@
-## old
 services:
   pg:
     image: postgres
@@ -55,7 +54,13 @@ services:
         condition: service_healthy
       schemaregistry:
         condition: service_healthy
-
+  redis:
+    extends:
+      file: docker/redis/docker-compose.redis.yml
+      service: redis
 networks:
   kafka_network:
     name: kafka_docker_net
+volumes:
+  redis_data:
+    driver: local

@@ -1,8 +1,9 @@
 """Module for scraping and checking updates from GitHub and StackOverflow links."""
 
 import asyncio
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, AsyncGenerator, Literal, Optional
 
 import httpx
 from loguru import logger
@@ -10,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.data_classes import LinkUpdate
 from src.db import db_helper
+from src.db.db_helper import DatabaseHelper
 from src.dependencies import link_service
 from src.exceptions.exceptions import ExtractResponseError
 from src.scrapper.clients import GitHubClient, StackOverflowClient
@@ -152,16 +154,16 @@ class Scrapper:
 async def scrapper() -> None:
     """Main scraper function that runs indefinitely to check for updates."""
     scraper = Scrapper()
-    session = await anext(db_helper.session_getter())
     await scraper.start()
-    try:
+    async with db_helper.get_session() as session:
         while True:
-            await scraper.check_updates(session)
-            await asyncio.sleep(PERIOD_OF_CHECK_SECONDS)
-    except Exception as e:
-        logger.error(f"error while check updates\n\n{e}")
-        await scraper.stop()
-        raise e
+            try:
+                await scraper.check_updates(session)
+                await asyncio.sleep(PERIOD_OF_CHECK_SECONDS)
+            except Exception as e:
+                logger.error(f"error while check updates\n\n{e}")
+                await scraper.stop()
+                raise e
 
 
 if __name__ == "__main__":

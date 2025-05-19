@@ -3,9 +3,11 @@ from typing import Literal, Union
 from loguru import logger
 
 from src.link_service.link_service import AsyncLinkService, LinkService
+from src.redis_.redis_services import RedisService
 from src.repository.async_.link_repository_orm import LinkRepositoryORM
 from src.repository.async_.link_repository_sql import LinkRepositoryRawSQL
 from src.repository.sync_.link_repository_local import LinkRepositoryLocal
+from src.settings import RedisSettings
 
 type_service: Literal["sync", "async"] = "async"
 type_repository: Literal["orm", "sql"] | None = "orm"

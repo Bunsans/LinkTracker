@@ -3,6 +3,7 @@ from fastapi import status
 from loguru import logger
 from telethon.events import NewMessage
 
+from src.dependencies import redis_service
 from src.handlers.handlers_settings import api_settings, user_states
 from src.handlers.is_chat_registrated import is_chat_registrated
 from src.utils.bot_utils import send_message_from_bot
@@ -40,6 +41,7 @@ async def untrack_cmd_handler(
             match status_code:
                 case status.HTTP_200_OK:
                     message = f"Вы прекратили следить за {link}"
+                    await redis_service.invalidate_cache(chat_id)
                 case status.HTTP_422_UNPROCESSABLE_ENTITY:
                     message = "Неверный формат для ссылки. Про форматы смотрите в /help"
                 case status.HTTP_404_NOT_FOUND:

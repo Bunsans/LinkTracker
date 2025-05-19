@@ -34,8 +34,8 @@ services:
       KAFKA_LOG4J_ROOT_LOGLEVEL: ERROR
       KAFKA_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.apache.kafka=ERROR,kafka=ERROR,kafka.cluster=ERROR,kafka.controller=ERROR,kafka.coordinator=ERROR,kafka.log=ERROR,kafka.server=ERROR,kafka.zookeeper=ERROR,state.change.logger=ERROR,kafka.log.LogCleaner=ERROR
       ZOOKEEPER_SASL_ENABLED: false
-      TEST_KAFKA_PASS: test
-      TEST_KAFKA_USER: testpass
+      TEST_KAFKA_PASS: ${APP_KAFKA_SASL_PASSWORD}
+      TEST_KAFKA_USER: ${APP_KAFKA_SASL_USERNAME}
     healthcheck:
       test: [ "CMD-SHELL", "kafka-broker-api-versions --bootstrap-server=broker1:29092" ]
       interval: 30s

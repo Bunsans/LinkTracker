@@ -40,6 +40,10 @@ sync:
 .PHONY: db
 db:
 	docker compose up -d pg
+	
+.PHONY: services
+services:
+	docker compose up -d 
 
 
 .PHONY: server

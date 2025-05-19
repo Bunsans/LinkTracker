@@ -47,8 +47,9 @@ class HTTPUpdateNotifier(AbstractUpdateNotifier):
 
 
 class KafkaUpdateNotifier(AbstractUpdateNotifier):
-    def __init__(self) -> None:
-        self.topic = kafka_settings.kafka_topic_notifications
+    def __init__(self, setting: MessageBrokerSettings = kafka_settings) -> None:
+        self.kafka_settings = setting
+        self.topic = self.kafka_settings.kafka_topic_notifications
 
     # aka kafka producer
     async def send_notifications(
@@ -56,7 +57,7 @@ class KafkaUpdateNotifier(AbstractUpdateNotifier):
         link_updates: list[LinkUpdate],
     ) -> None:
         for link_update in link_updates:
-            is_good_send = self.send_one_notification(link_update)
+            is_good_send = await self.send_one_notification(link_update)
             if is_good_send:
                 logger.success("All send good")
             else:
@@ -66,11 +67,11 @@ class KafkaUpdateNotifier(AbstractUpdateNotifier):
         """Start and configure the Kafka producer."""
         try:
             self._producer = AIOKafkaProducer(
-                bootstrap_servers=kafka_settings.kafka_bootstrap_servers,
-                security_protocol=kafka_settings.kafka_security_protocol,
-                sasl_mechanism=kafka_settings.kafka_sasl_mechanism,
-                sasl_plain_username=kafka_settings.kafka_sasl_username,
-                sasl_plain_password=kafka_settings.kafka_sasl_password,
+                bootstrap_servers=self.kafka_settings.kafka_bootstrap_servers,
+                security_protocol=self.kafka_settings.kafka_security_protocol,
+                sasl_mechanism=self.kafka_settings.kafka_sasl_mechanism,
+                sasl_plain_username=self.kafka_settings.kafka_sasl_username,
+                sasl_plain_password=self.kafka_settings.kafka_sasl_password,
                 value_serializer=self._serialize_message,
                 key_serializer=lambda x: str(x).encode("utf-8"),
             )
@@ -97,7 +98,6 @@ class KafkaUpdateNotifier(AbstractUpdateNotifier):
 
     async def send_one_notification(self, link_updates: LinkUpdate) -> bool:
         try:
-
             await self._producer.send_and_wait(
                 topic=self.topic, value=link_updates, key=link_updates.id
             )
@@ -115,9 +115,7 @@ class KafkaUpdateNotifier(AbstractUpdateNotifier):
     @staticmethod
     def _serialize_message(value: LinkUpdate) -> bytes:
         """Serialize LinkUpdate object to bytes for Kafka."""
-        message_dict = asdict(value)
-        message_dict["url"] = str(message_dict["url"])  # Convert HttpUrl to string
-        return json.dumps(message_dict).encode("utf-8")
+        return value.model_dump_json().encode("utf-8")
 
 
 class NotifierFactory:
@@ -126,7 +124,4 @@ class NotifierFactory:
             case TransportType.http:
                 return HTTPUpdateNotifier()
             case TransportType.kafka:
-                return KafkaUpdateNotifier(
-                    bootstrap_servers=kafka_settings.kafka_bootstrap_servers,
-                    topic=kafka_settings.kafka_topic_notifications,
-                )
+                return KafkaUpdateNotifier()

@@ -3,6 +3,7 @@ from fastapi import status
 from loguru import logger
 from telethon.events import NewMessage
 
+from src.dependencies import redis_service
 from src.handlers.handlers_settings import (
     STATE_FILTERS,
     STATE_TAGS,
@@ -80,6 +81,7 @@ async def message_handler(event: NewMessage.Event) -> None:
             match response.status_code:
                 case status.HTTP_200_OK:
                     message = f"Ссылка {link} добавлена с тэгами: {tags} и фильтрами: {filters}"
+                    await redis_service.invalidate_cache(event.chat_id)
                 case status.HTTP_401_UNAUTHORIZED:
                     message = "Чат не зарегистрирован, для регистрации введите /start"
                 case _:

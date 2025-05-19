@@ -1,10 +1,8 @@
-import datetime
 import json
-from typing import Callable
+from typing import Optional
 
 from aiokafka import AIOKafkaConsumer
 from loguru import logger
-from pydantic import ValidationError
 from telethon import TelegramClient
 
 from src.data_classes import LinkUpdate
@@ -15,11 +13,17 @@ kafka_settings = MessageBrokerSettings()
 
 
 class KafkaConsumerService:
-    def __init__(self, tg_client: TelegramClient):
+    def __init__(
+        self,
+        tg_client: TelegramClient,
+        settings: MessageBrokerSettings = kafka_settings,
+        dlq_producer: Optional[KafkaDLQProducer] = None,
+    ):
         self.consumer = None
-        self.dlq_producer = KafkaDLQProducer()
+        self.dlq_producer = dlq_producer or KafkaDLQProducer(settings=settings)
         self.is_running = False
         self.tg_client = tg_client
+        self.kafka_settings = settings
 
     async def kafka_message_sending_to_bot(self, message: dict):
         try:
@@ -31,19 +35,19 @@ class KafkaConsumerService:
             logger.exception(f"Error processing Kafka notification{e}")
 
     async def setup(self):
-        if kafka_settings.transport_type != TransportType.kafka:
+        if self.kafka_settings.transport_type != TransportType.kafka:
             return
 
         self.consumer = AIOKafkaConsumer(
-            kafka_settings.kafka_topic_notifications,
-            bootstrap_servers=kafka_settings.kafka_bootstrap_servers,
-            group_id=kafka_settings.kafka_group_id,
+            self.kafka_settings.kafka_topic_notifications,
+            bootstrap_servers=self.kafka_settings.kafka_bootstrap_servers,
+            group_id=self.kafka_settings.kafka_group_id,
             auto_offset_reset="earliest",
             enable_auto_commit=True,
-            security_protocol=kafka_settings.kafka_security_protocol,
-            sasl_mechanism=kafka_settings.kafka_sasl_mechanism,
-            sasl_plain_username=kafka_settings.kafka_sasl_username,
-            sasl_plain_password=kafka_settings.kafka_sasl_password,
+            security_protocol=self.kafka_settings.kafka_security_protocol,
+            sasl_mechanism=self.kafka_settings.kafka_sasl_mechanism,
+            sasl_plain_username=self.kafka_settings.kafka_sasl_username,
+            sasl_plain_password=self.kafka_settings.kafka_sasl_password,
         )
 
         try:

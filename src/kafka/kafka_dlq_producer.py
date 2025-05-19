@@ -25,10 +25,11 @@ class DLQMessage(BaseModel):
 class KafkaDLQProducer:
     """Producer for sending failed messages to a Dead Letter Queue."""
 
-    def __init__(self) -> None:
+    def __init__(self, settings: MessageBrokerSettings = kafka_settings) -> None:
         """Initialize the DLQ producer."""
         self._producer: Optional[AIOKafkaProducer] = None
-        self._dlq_topic = f"{kafka_settings.kafka_topic_notifications}.DLQ"
+        self.kafka_settings = settings
+        self._dlq_topic = f"{self.kafka_settings.kafka_topic_notifications}.DLQ"
 
     async def start(self) -> None:
         """Initialize and start the DLQ producer."""
@@ -38,11 +39,11 @@ class KafkaDLQProducer:
 
         try:
             self._producer = AIOKafkaProducer(
-                bootstrap_servers=kafka_settings.kafka_bootstrap_servers,
-                security_protocol=kafka_settings.kafka_security_protocol,
-                sasl_mechanism=kafka_settings.kafka_sasl_mechanism,
-                sasl_plain_username=kafka_settings.kafka_sasl_username,
-                sasl_plain_password=kafka_settings.kafka_sasl_password,
+                bootstrap_servers=self.kafka_settings.kafka_bootstrap_servers,
+                security_protocol=self.kafka_settings.kafka_security_protocol,
+                sasl_mechanism=self.kafka_settings.kafka_sasl_mechanism,
+                sasl_plain_username=self.kafka_settings.kafka_sasl_username,
+                sasl_plain_password=self.kafka_settings.kafka_sasl_password,
                 value_serializer=self._serialize_message,
             )
 
@@ -92,7 +93,6 @@ class KafkaDLQProducer:
         if self._producer is None:
             logger.warning("Attempted to stop non-existent producer")
             return
-
         try:
             await self._producer.stop()
             self._producer = None

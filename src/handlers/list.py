@@ -3,6 +3,7 @@ from fastapi import status
 from loguru import logger
 from telethon.events import NewMessage
 
+from src.dependencies import redis_service, redis_settings
 from src.handlers.handlers_settings import api_settings, user_states
 from src.schemas.schemas import ListLinksResponse
 from src.utils.bot_utils import send_message_from_bot
@@ -16,6 +17,13 @@ async def list_cmd_handler(
 
     if event.chat_id in user_states:
         del user_states[event.chat_id]
+
+    # try get from cache
+    cached_result = await redis_service.get_cached_list(event.chat_id)
+    if cached_result:
+        logger.info("Returning cached list")
+        await send_message_from_bot(event, cached_result)
+        return
 
     async with httpx.AsyncClient() as client:
         response = await client.get(
@@ -42,4 +50,5 @@ Filters: {', '.join(link.filters)}\n"""
             message = f"Ошибка сервера:\n{response.text}"
         else:
             message = "Неизвестная ошибка"
+    await redis_service.cache_list(chat_id=event.chat_id, items=message, ttl=redis_settings.ttl)
     await send_message_from_bot(event, message)
