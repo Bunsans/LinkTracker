@@ -1,5 +1,7 @@
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, AsyncIterator
+from contextlib import asynccontextmanager
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -39,6 +41,24 @@ class DatabaseHelper:
     async def session_getter(self) -> AsyncGenerator[AsyncSession, None]:
         async with self.session_factory() as session:
             yield session
+
+    @asynccontextmanager
+    async def get_session(self) -> AsyncIterator[AsyncSession]:
+        """Recommended context manager for session handling
+        Provides proper cleanup and error handling.
+        """
+        session: AsyncSession | None = None
+        try:
+            session = self.session_factory()
+            yield session
+            await session.commit()
+        except SQLAlchemyError:
+            if session:
+                await session.rollback()
+            raise
+        finally:
+            if session:
+                await session.close()
 
 
 db_helper = DatabaseHelper(

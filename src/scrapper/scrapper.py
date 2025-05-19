@@ -122,11 +122,13 @@ class Scrapper:
 
 async def scrapper() -> None:
     scraper = Scrapper()
-    session = await anext(db_helper.session_getter())
-
-    while True:
-        await scraper.check_updates(session)
-        await asyncio.sleep(PERIOD_OF_CHECK_SECONDS)
+    async with db_helper.get_session() as session:
+        while True:
+            try:
+                await scraper.check_updates(session)
+                await asyncio.sleep(PERIOD_OF_CHECK_SECONDS)
+            except Exception as e:  # noqa: BLE001, PERF203
+                logger.error(f"error while check updates\n\n{e}")
 
 
 if __name__ == "__main__":
