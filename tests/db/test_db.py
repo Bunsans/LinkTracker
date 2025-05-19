@@ -24,6 +24,12 @@ LEN_BATCH = 2
 
 @pytest_asyncio.fixture(scope="session")
 def postgres_container() -> PostgresContainer:
+    """Fixture providing PostgreSQL test container instance.
+
+    Yields:
+        Running PostgresContainer instance for testing
+
+    """
     container = PostgresContainer("postgres:latest", dbname="link", driver="asyncpg")
     container.start()
     yield container
@@ -33,6 +39,12 @@ def postgres_container() -> PostgresContainer:
 
 @pytest_asyncio.fixture(scope="session")  # type: ignore
 def db_url(postgres_container: PostgresContainer) -> str:  # type: ignore
+    """Get database connection URL from test container.
+
+    Returns:
+        Connection string for test database
+
+    """
     db_url_ = postgres_container.get_connection_url()
     logger.debug(f"DB URL: {db_url_}")
     return db_url_  # type: ignore
@@ -51,6 +63,12 @@ async def db_helper(  # type: ignore
     db_url: str,
     event_loop: asyncio.AbstractEventLoop,
 ) -> DatabaseHelper:  # type: ignore
+    """Fixture providing initialized DatabaseHelper instance.
+
+    Yields:
+        Configured DatabaseHelper for testing
+
+    """
     logger.info(event_loop)
 
     db_helper = DatabaseHelper(url=db_url)
@@ -63,6 +81,10 @@ async def create_db(
     db_helper: DatabaseHelper,
     event_loop: asyncio.AbstractEventLoop,
 ) -> AsyncGenerator[Any, Any]:
+    """Fixture for database schema initialization.
+
+    Drops and recreates all database tables before tests
+    """
     logger.info(event_loop)
     async with db_helper.engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -72,6 +94,12 @@ async def create_db(
 
 @pytest_asyncio.fixture(scope="function")  # type: ignore
 async def session(db_helper: DatabaseHelper) -> AsyncSession:  # type: ignore
+    """Fixture providing database session for individual tests.
+
+    Yields:
+        New AsyncSession for each test function
+
+    """
     session = await anext(db_helper.session_getter())
     yield session
 
@@ -81,11 +109,18 @@ async def session(db_helper: DatabaseHelper) -> AsyncSession:  # type: ignore
 
 @pytest.fixture
 def repo() -> LinkRepositoryORM:
+    """Fixture providing LinkRepositoryORM instance for testing."""
     return LinkRepositoryORM()
 
 
 @pytest.mark.asyncio
 async def test_register_chat(repo: LinkRepositoryORM, session: AsyncSession) -> None:
+    """Test chat registration functionality.
+
+    Verifies:
+    - Successful chat registration
+    - Duplicate registration prevention
+    """
     curr_chat_id = 123
     await repo.register_chat(curr_chat_id, session)
     chat = await repo.is_chat_registrated(curr_chat_id, session)
@@ -99,6 +134,13 @@ async def test_register_chat(repo: LinkRepositoryORM, session: AsyncSession) -> 
 
 @pytest.mark.asyncio
 async def test_add_and_get_links(repo: LinkRepositoryORM, session: AsyncSession) -> None:
+    """Test link management workflow.
+
+    Verifies:
+    - Link addition functionality
+    - Link update capability
+    - Link retrieval correctness
+    """
     curr_chat_id = 456
     await repo.register_chat(curr_chat_id, session)
 
@@ -125,6 +167,12 @@ async def test_add_and_get_links(repo: LinkRepositoryORM, session: AsyncSession)
 
 @pytest.mark.asyncio
 async def test_remove_link(repo: LinkRepositoryORM, session: AsyncSession) -> None:
+    """Test link removal functionality.
+
+    Verifies:
+    - Successful link removal
+    - Error handling for non-existent links
+    """
     await repo.register_chat(789, session)
     link_request = AddLinkRequest(
         link="https://stackoverflow.com/questions/123456",
@@ -150,6 +198,12 @@ async def test_remove_link(repo: LinkRepositoryORM, session: AsyncSession) -> No
 
 @pytest.mark.asyncio
 async def test_delete_chat(repo: LinkRepositoryORM, session: AsyncSession) -> None:
+    """Test chat deletion functionality.
+
+    Verifies:
+    - Complete chat removal
+    - Data consistency after deletion
+    """
     await repo.register_chat(999, session)
     await repo.add_link(
         999,
@@ -165,6 +219,12 @@ async def test_delete_chat(repo: LinkRepositoryORM, session: AsyncSession) -> No
 
 @pytest.mark.asyncio
 async def test_batch_processing(repo: LinkRepositoryORM, session: AsyncSession) -> None:
+    """Test batch processing of chat-link associations.
+
+    Verifies:
+    - Correct batch size handling
+    - Proper data grouping by links
+    """
     for i in range(1, 6):
         await repo.register_chat(i, session)
         await repo.add_link(

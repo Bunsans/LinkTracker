@@ -23,6 +23,16 @@ class LinkRepositoryRawSQL(AcyncLinkRepositoryInterface):
         tg_chat_id: int,
         session: AsyncSession,
     ) -> dict | None:  # type: ignore
+        """Check if a chat is registered in the system.
+
+        Args:
+            tg_chat_id: Telegram chat ID to check
+            session: Async database session
+
+        Returns:
+            Dictionary with chat data if found, None otherwise
+
+        """
         query = text(
             """
             SELECT id, tg_chat_id
@@ -35,12 +45,35 @@ class LinkRepositoryRawSQL(AcyncLinkRepositoryInterface):
         return dict(row) if row else None
 
     async def _find_link(self, link: str, session: AsyncSession) -> dict[Any, Any] | None:
+        """Internal method to find a link by its URL.
+
+        Args:
+            link: URL string to search for
+            session: Async database session
+
+        Returns:
+            Dictionary with link data if found, None otherwise
+
+        """
         query = text("SELECT * FROM links WHERE link = :link")
         result: Result[Any] = await session.execute(query, {"link": link})
         row = result.mappings().one_or_none()
         return dict(row) if row else None
 
     async def get_links(self, tg_chat_id: int, session: AsyncSession) -> list[LinkResponse]:
+        """Get all links associated with a chat.
+
+        Args:
+            tg_chat_id: Telegram chat ID to get links for
+            session: Async database session
+
+        Returns:
+            List of LinkResponse objects with link details
+
+        Raises:
+            NotRegistratedChatError: If chat is not registered
+
+        """
         chat = await self.is_chat_registrated(tg_chat_id, session)
         if not chat:
             raise NotRegistratedChatError("Not registrated chat.")
@@ -65,16 +98,27 @@ class LinkRepositoryRawSQL(AcyncLinkRepositoryInterface):
         link_request: AddLinkRequest,
         session: AsyncSession,
     ) -> LinkResponse:
+        """Add a new link or update existing link association for a chat.
+
+        Args:
+            tg_chat_id: Telegram chat ID to add link to
+            link_request: Link data including URL, tags and filters
+            session: Async database session
+
+        Returns:
+            LinkResponse with created/updated link details
+
+        Raises:
+            NotRegistratedChatError: If chat is not registered
+
+        """
         chat = await self.is_chat_registrated(tg_chat_id, session)
         if not chat:
             raise NotRegistratedChatError("Not registrated chat.")
 
-        # async with session.begin():
-        # Поиск существующей ссылки
         link = await self._find_link(link_request.link, session)
 
         if not link:
-            # Создаем новую ссылку
             insert_link = text(
                 "INSERT INTO links (link, count_chats) VALUES (:link, 1) RETURNING id",
             )
@@ -82,7 +126,6 @@ class LinkRepositoryRawSQL(AcyncLinkRepositoryInterface):
             link_id = result.scalar()
         else:
             link_id = link["id"]
-            # Проверяем существующую ассоциацию
             check_assoc = text(
                 """
                 SELECT * FROM chat_link_associations
@@ -95,7 +138,6 @@ class LinkRepositoryRawSQL(AcyncLinkRepositoryInterface):
             )
 
             if assoc_result.scalar_one_or_none():
-                # Обновляем существующую ассоциацию
                 update_assoc = text(
                     """
                     UPDATE chat_link_associations
@@ -122,7 +164,6 @@ class LinkRepositoryRawSQL(AcyncLinkRepositoryInterface):
                     filters=updated["filters"],
                 )
             else:
-                # Увеличиваем счетчик ссылок
                 update_count = text(
                     """
                     UPDATE links
@@ -131,7 +172,6 @@ class LinkRepositoryRawSQL(AcyncLinkRepositoryInterface):
                 """,
                 )
                 await session.execute(update_count, {"link_id": link_id})
-        # Создаем новую ассоциацию
         insert_assoc = text(
             """
             INSERT INTO chat_link_associations
@@ -165,17 +205,29 @@ class LinkRepositoryRawSQL(AcyncLinkRepositoryInterface):
         link_request: RemoveLinkRequest,
         session: AsyncSession,
     ) -> LinkResponse:
+        """Remove a link association from a chat.
+
+        Args:
+            tg_chat_id: Telegram chat ID to remove link from
+            link_request: Link data to remove
+            session: Async database session
+
+        Returns:
+            LinkResponse with removed link details
+
+        Raises:
+            NotRegistratedChatError: If chat is not registered
+            LinkNotFoundError: If link or association not found
+
+        """
         chat = await self.is_chat_registrated(tg_chat_id, session)
         if not chat:
             raise NotRegistratedChatError("Not registrated chat.")
 
-        # async with session.begin():
-        # Находим ссылку
         link = await self._find_link(link_request.link, session)
         if link is None:
             raise LinkNotFoundError("Link not found.")
 
-        # Удаляем ассоциацию
         delete_assoc = text(
             """
             DELETE FROM chat_link_associations
@@ -189,7 +241,6 @@ class LinkRepositoryRawSQL(AcyncLinkRepositoryInterface):
         )
         row = result.mappings().one_or_none()
         deleted = dict(row) if row else None
-        # Обновляем счетчик
         update_count = text(
             """
             UPDATE links
@@ -199,7 +250,6 @@ class LinkRepositoryRawSQL(AcyncLinkRepositoryInterface):
         )
         await session.execute(update_count, {"link_id": link["id"]})
         await session.commit()
-        # Удаляем ссылку если счетчик 0
         check_count = text("SELECT count_chats FROM links WHERE id = :link_id")
         count_result = await session.execute(check_count, {"link_id": link["id"]})
         if count_result.scalar() == 0:
@@ -221,6 +271,16 @@ class LinkRepositoryRawSQL(AcyncLinkRepositoryInterface):
         )
 
     async def register_chat(self, tg_chat_id: int, session: AsyncSession) -> None:
+        """Register a new chat in the system.
+
+        Args:
+            tg_chat_id: Telegram chat ID to register
+            session: Async database session
+
+        Raises:
+            EntityAlreadyExistsError: If chat is already registered
+
+        """
         if await self.is_chat_registrated(tg_chat_id, session):
             raise EntityAlreadyExistsError("Chat already registered")
 
@@ -229,12 +289,20 @@ class LinkRepositoryRawSQL(AcyncLinkRepositoryInterface):
         await session.commit()
 
     async def delete_chat(self, tg_chat_id: int, session: AsyncSession) -> None:
+        """Delete a chat and all its associations.
+
+        Args:
+            tg_chat_id: Telegram chat ID to delete
+            session: Async database session
+
+        Raises:
+            NotRegistratedChatError: If chat is not registered
+
+        """
         chat = await self.is_chat_registrated(tg_chat_id, session)
         if not chat:
             raise NotRegistratedChatError("Not registrated chat")
 
-        # async with session.begin():
-        # Удаляем ассоциации
         delete_assoc = text(
             """
             DELETE FROM chat_link_associations
@@ -271,6 +339,16 @@ class LinkRepositoryRawSQL(AcyncLinkRepositoryInterface):
         session: AsyncSession,
         batch_size: int = 2,
     ) -> AsyncGenerator[dict[str, list[int]], None]:  # type: ignore
+        """Get chat IDs grouped by links in batches.
+
+        Args:
+            session: Async database session
+            batch_size: Number of links to process per batch
+
+        Yields:
+            Dictionary mapping links to lists of associated chat IDs
+
+        """
         offset = 0
         while True:
             query = text(

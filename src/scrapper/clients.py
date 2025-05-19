@@ -1,3 +1,7 @@
+"""Module containing abstract and concrete implementations of
+clients for checking updates from GitHub and StackOverflow.
+"""
+
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any
@@ -12,20 +16,48 @@ scrapper_settings = ScrapperSettings()
 
 
 class UpdateClientAbstract(ABC):
+    """Abstract base class for update clients."""
+
     API_NAME: str
     BASE_URL: str
 
     @abstractmethod
     def get_api_url(self, url: str) -> str:
-        pass
+        """Convert a web URL to an API endpoint URL.
+
+        Args:
+            url: The web URL to convert.
+
+        Returns:
+            The corresponding API endpoint URL.
+
+        """
 
     @abstractmethod
     def extract_info(self, response: httpx.Response, last_seen_dt: datetime) -> str | None:
-        pass
+        """Extract relevant information from the API response.
+
+        Args:
+            response: The HTTP response from the API.
+            last_seen_dt: The datetime to compare against for new updates.
+
+        Returns:
+            Extracted information as a string, or None if no updates.
+
+        """
 
     @abstractmethod
     async def get_request(self, url: str, http_client: httpx.AsyncClient) -> httpx.Response:
-        pass
+        """Make an API request.
+
+        Args:
+            url: The API URL to request.
+            http_client: The HTTP client to use for the request.
+
+        Returns:
+            The HTTP response from the API.
+
+        """
 
     async def get_description(
         self,
@@ -33,6 +65,20 @@ class UpdateClientAbstract(ABC):
         http_client: httpx.AsyncClient,
         last_seen_dt: datetime,
     ) -> str | None:
+        """Get description updates for a given URL since last seen datetime.
+
+        Args:
+            url: The URL to check for updates.
+            http_client: The HTTP client to use for requests.
+            last_seen_dt: The datetime to check for updates since.
+
+        Returns:
+            The updated description if found, None otherwise.
+
+        Raises:
+            ConnectionError: If there are issues connecting to the API or the resource is not found.
+
+        """
         api_url = self.get_api_url(url)
         # debug logger.debug(f"Getting {self.API_NAME} description for {api_url}")
         response: httpx.Response = await self.get_request(api_url, http_client)
@@ -48,14 +94,38 @@ class UpdateClientAbstract(ABC):
 
 
 class StackOverflowClient(UpdateClientAbstract):
+    """Client for interacting with the StackOverflow API."""
+
     BASE_URL = "https://api.stackexchange.com/2.3"
     API_NAME = "StackOverflow"
     stack_query = scrapper_settings.stack_query
 
     async def get_request(self, api_url: str, http_client: httpx.AsyncClient) -> httpx.Response:
+        """Make a GET request to the StackOverflow API.
+
+        Args:
+            api_url: The API URL to request.
+            http_client: The HTTP client to use for the request.
+
+        Returns:
+            The HTTP response from the API.
+
+        """
         return await http_client.get(api_url)
 
     def get_api_url(self, url: str) -> str:
+        """Convert a StackOverflow web URL to an API endpoint URL.
+
+        Args:
+            url: The StackOverflow web URL to convert.
+
+        Returns:
+            The corresponding StackOverflow API endpoint URL.
+
+        Raises:
+            ValueError: If the URL format is invalid.
+
+        """
         prefix = "https://stackoverflow.com/"
 
         url_splitted = url.split("/")
@@ -71,6 +141,19 @@ class StackOverflowClient(UpdateClientAbstract):
         return f"{self.BASE_URL}/questions/{question_id}/{self.stack_query}"
 
     def extract_info(self, response: httpx.Response, last_seen_dt: datetime) -> str | None:
+        """Extract information from StackOverflow API response.
+
+        Args:
+            response: The HTTP response from the StackOverflow API.
+            last_seen_dt: The datetime to compare against for new updates.
+
+        Returns:
+            Formatted string of updates, or None if no updates.
+
+        Raises:
+            StackOverflowExtractResponseError: If the response format is invalid.
+
+        """
         data: dict[Any, Any] = response.json()
         items: list[Any] = data.get("items", [])
         if items is None:
@@ -88,17 +171,41 @@ class StackOverflowClient(UpdateClientAbstract):
 
 
 class GitHubClient(UpdateClientAbstract):
+    """Client for interacting with the GitHub API."""
+
     BASE_URL = "https://api.github.com"
     API_NAME = "GitHub"
     GITHUB_TOKEN = scrapper_settings.github_token
 
     async def get_request(self, api_url: str, http_client: httpx.AsyncClient) -> httpx.Response:
+        """Make an authenticated GET request to the GitHub API.
+
+        Args:
+            api_url: The API URL to request.
+            http_client: The HTTP client to use for the request.
+
+        Returns:
+            The HTTP response from the API.
+
+        """
         return await http_client.get(
             api_url,
             headers={"Authorization": f"Bearer {self.GITHUB_TOKEN}"},
         )
 
     def get_api_url(self, url: str) -> str:
+        """Convert a GitHub web URL to an API endpoint URL.
+
+        Args:
+            url: The GitHub web URL to convert.
+
+        Returns:
+            The corresponding GitHub API endpoint URL.
+
+        Raises:
+            ValueError: If the URL format is invalid.
+
+        """
         prefix = "https://github.com/"
         if not url.startswith(prefix):
             raise ValueError(f"Invalid {self.API_NAME} URL format")
@@ -118,6 +225,21 @@ class GitHubClient(UpdateClientAbstract):
         return f"{self.BASE_URL}/repos/{owner}/{repo}/issues"
 
     def extract_info(self, response: httpx.Response, last_seen_dt: datetime) -> str:
+        """Extract information from GitHub API response.
+
+        Args:
+            response: The HTTP response from the GitHub API.
+            last_seen_dt: The datetime to compare against for new updates.
+
+        Returns:
+            Formatted string of updates.
+
+        Raises:
+            GitHubExtractResponseError: If the response format is invalid.
+            StackOverflowExtractResponseError: If the response format is invalid
+                                                (inherited from parent).
+
+        """
         items: list[Any] = response.json()
         if items is None:
             raise GitHubExtractResponseError("No items in response")

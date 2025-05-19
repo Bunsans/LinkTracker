@@ -1,3 +1,5 @@
+"""Database helper module for managing async SQLAlchemy connections and sessions."""
+
 from collections.abc import AsyncGenerator, AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -13,6 +15,8 @@ from src.settings import db_settings
 
 
 class DatabaseHelper:
+    """Helper class for managing database connections and sessions asynchronously."""
+
     def __init__(
         self,
         url: str,
@@ -21,6 +25,16 @@ class DatabaseHelper:
         pool_size: int = 5,
         max_overflow: int = 10,
     ) -> None:
+        """Initialize the DatabaseHelper with connection parameters.
+
+        Args:
+            url: Database connection URL.
+            echo: Whether to echo SQL statements (for debugging).
+            echo_pool: Whether to echo connection pool operations.
+            pool_size: Number of connections to keep in the pool.
+            max_overflow: Maximum number of connections beyond pool_size to allow.
+
+        """
         self.engine: AsyncEngine = create_async_engine(
             url=url,
             echo=echo,
@@ -36,9 +50,16 @@ class DatabaseHelper:
         )
 
     async def dispose(self) -> None:
+        """Close all connections in the connection pool."""
         await self.engine.dispose()
 
     async def session_getter(self) -> AsyncGenerator[AsyncSession, None]:
+        """Async generator that yields database sessions.
+
+        Yields:
+            AsyncSession: A new database session.
+
+        """
         async with self.session_factory() as session:
             yield session
 
@@ -46,6 +67,13 @@ class DatabaseHelper:
     async def get_session(self) -> AsyncIterator[AsyncSession]:
         """Recommended context manager for session handling
         Provides proper cleanup and error handling.
+
+        Yields:
+            AsyncSession: A new database session.
+
+        Raises:
+            SQLAlchemyError: If any database error occurs during the session.
+
         """
         session: AsyncSession | None = None
         try:
@@ -61,6 +89,7 @@ class DatabaseHelper:
                 await session.close()
 
 
+# Global instance of DatabaseHelper configured with settings
 db_helper = DatabaseHelper(
     url=str(db_settings.url),
     echo=db_settings.echo,

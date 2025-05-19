@@ -1,3 +1,5 @@
+"""Module for scraping and checking updates from GitHub and StackOverflow links."""
+
 import asyncio
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
@@ -22,19 +24,34 @@ api_settings = APIServerSettings()
 
 
 class AbstractUpdateNotifier(ABC):
+    """Abstract base class for update notifiers."""
+
     @abstractmethod
     async def send_notification(
         self,
         link_updates: list[LinkUpdate],
     ) -> None:
-        pass
+        """Send notifications about link updates.
+
+        Args:
+            link_updates: List of LinkUpdate objects containing update information.
+
+        """
 
 
 class UpdateNotifier(AbstractUpdateNotifier):
+    """Concrete implementation of AbstractUpdateNotifier for sending update notifications."""
+
     async def send_notification(
         self,
         link_updates: list[LinkUpdate],
     ) -> None:
+        """Send notifications about link updates to the API server.
+
+        Args:
+            link_updates: List of LinkUpdate objects containing update information.
+
+        """
         async with httpx.AsyncClient() as http_client:
             for link_update in link_updates:
                 response = await http_client.post(
@@ -48,13 +65,28 @@ class UpdateNotifier(AbstractUpdateNotifier):
 
 
 class Scrapper:
+    """Main scraper class for checking updates from GitHub and StackOverflow links."""
+
     def __init__(self) -> None:
+        """Initialize Scrapper with clients and services."""
         self.github_client = GitHubClient()
         self.stackoverflow_client = StackOverflowClient()
         self.link_service: LinkService | AsyncLinkService = link_service
         self.update_notifier = UpdateNotifier()
 
     def _get_type_link(self, link: str) -> Literal["github", "stackoverflow"] | None:
+        """Determine the type of link (GitHub or StackOverflow).
+
+        Args:
+            link: The URL to check.
+
+        Returns:
+            The link type as either "github" or "stackoverflow".
+
+        Raises:
+            ValueError: If the link type cannot be determined.
+
+        """
         if link.startswith("https://github.com/"):
             return "github"
         elif link.startswith("https://stackoverflow.com/"):
@@ -68,6 +100,17 @@ class Scrapper:
         last_seen_dt: datetime,
         http_client: httpx.AsyncClient,
     ) -> str | None:
+        """Get description updates for a given link since last seen datetime.
+
+        Args:
+            link: The URL to check for updates.
+            last_seen_dt: The datetime to check for updates since.
+            http_client: The HTTP client to use for requests.
+
+        Returns:
+            The updated description if found, None otherwise.
+
+        """
         type_link = self._get_type_link(link)
 
         try:
@@ -94,6 +137,12 @@ class Scrapper:
         return None
 
     async def check_updates(self, session: AsyncSession) -> None:
+        """Check for updates on all tracked links and send notifications.
+
+        Args:
+            session: The database session to use for queries.
+
+        """
         current_time = datetime.now(TIMEZONE)
         week_ago = current_time - timedelta(seconds=PERIOD_OF_CHECK_SECONDS)
         async for chat_id_group_by_link in self.link_service.get_chat_id_group_by_link(  # type: ignore
@@ -121,6 +170,7 @@ class Scrapper:
 
 
 async def scrapper() -> None:
+    """Main scraper function that runs indefinitely to check for updates."""
     scraper = Scrapper()
     async with db_helper.get_session() as session:
         while True:
