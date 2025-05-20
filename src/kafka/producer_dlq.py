@@ -1,9 +1,5 @@
 from __future__ import annotations
-
-import json
-from dataclasses import asdict
 from datetime import datetime
-from typing import Any, Dict, Optional
 
 from aiokafka import AIOKafkaProducer
 from loguru import logger
@@ -11,15 +7,16 @@ from pydantic import BaseModel
 
 from src.settings import TIMEZONE, MessageBrokerSettings
 
-kafka_settings = MessageBrokerSettings()
-
 
 class DLQMessage(BaseModel):
     """Model for Dead Letter Queue messages."""
 
-    original_message: Dict[str, Any]
+    original_message: str
     error: str
     timestamp: str
+
+
+kafka_settings = MessageBrokerSettings()
 
 
 class KafkaDLQProducer:
@@ -27,7 +24,7 @@ class KafkaDLQProducer:
 
     def __init__(self, settings: MessageBrokerSettings = kafka_settings) -> None:
         """Initialize the DLQ producer."""
-        self._producer: Optional[AIOKafkaProducer] = None
+        self._producer: AIOKafkaProducer | None = None
         self.kafka_settings = settings
         self._dlq_topic = f"{self.kafka_settings.kafka_topic_notifications}.DLQ"
 
@@ -48,17 +45,13 @@ class KafkaDLQProducer:
             )
 
             await self._producer.start()
-            logger.info(
-                "DLQ producer started successfully",
-                event="dlq_producer_started",
-                topic=self._dlq_topic,
-            )
+            logger.info(f"DLQ producer started successfully, {self._dlq_topic}")
 
         except Exception as e:
             logger.critical(f"Failed to start DLQ producer{e}")
             raise RuntimeError("Failed to start DLQ producer") from e
 
-    async def send_to_dlq(self, original_message: Dict[str, Any], error_info: str) -> bool:
+    async def send_to_dlq(self, original_message: str, error_info: str) -> bool:
         """Send a failed message to the Dead Letter Queue.
 
         Args:
@@ -67,6 +60,7 @@ class KafkaDLQProducer:
 
         Returns:
             bool: True if message was successfully delivered to DLQ
+
         """
         if self._producer is None:
             logger.error("Cannot send to DLQ - producer not initialized")
@@ -78,15 +72,15 @@ class KafkaDLQProducer:
                 error=error_info,
                 timestamp=datetime.now(tz=TIMEZONE).isoformat(),
             )
-
+            logger.debug(f"dlq_message: {dlq_message}")
             await self._producer.send_and_wait(topic=self._dlq_topic, value=dlq_message)
 
             logger.info(f"Message successfully sent to DLQ: {error_info[:100]}")
-            return True
 
-        except Exception as e:
-            logger.error(f"Failed to send message to DLQ: {error_info[:100]}\n\n{e}")
+        except Exception as e:  # noqa: BLE001
+            logger.exception(f"Failed to send message to DLQ: {error_info}\n\n{e}")
             return False
+        return True
 
     async def stop(self) -> None:
         """Gracefully stop the DLQ producer."""
@@ -102,6 +96,6 @@ class KafkaDLQProducer:
             raise RuntimeError("Failed to stop DLQ producer") from e
 
     @staticmethod
-    def _serialize_message(message: DLQMessage) -> bytes:
-        """Serialize DLQ message to bytes for Kafka."""
-        return json.dumps(asdict(message)).encode("utf-8")
+    def _serialize_message(value: DLQMessage) -> bytes:
+        """Serialize LinkUpdate object to bytes for Kafka."""
+        return value.model_dump_json().encode("utf-8")

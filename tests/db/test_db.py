@@ -100,7 +100,7 @@ async def session(db_helper: DatabaseHelper) -> AsyncSession:  # type: ignore
         New AsyncSession for each test function
 
     """
-    session = await anext(db_helper.session_getter())
+    session = await anext(db_helper.session_getter())  # noqa: F821
     yield session
 
 

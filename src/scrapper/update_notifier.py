@@ -1,7 +1,4 @@
-import json
 from abc import ABC, abstractmethod
-from dataclasses import asdict
-from typing import Literal
 
 import httpx
 from aiokafka import AIOKafkaProducer
@@ -99,18 +96,19 @@ class KafkaUpdateNotifier(AbstractUpdateNotifier):
     async def send_one_notification(self, link_updates: LinkUpdate) -> bool:
         try:
             await self._producer.send_and_wait(
-                topic=self.topic, value=link_updates, key=link_updates.id
+                topic=self.topic,
+                value=link_updates,
+                key=link_updates.id,
             )
-
-            return True
 
         except ValidationError as e:
             logger.error(f"Invalid notification data format{e}")
             return False
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to send notification to Kafka{e}")
             return False
+        return True
 
     @staticmethod
     def _serialize_message(value: LinkUpdate) -> bytes:
@@ -119,9 +117,11 @@ class KafkaUpdateNotifier(AbstractUpdateNotifier):
 
 
 class NotifierFactory:
-    def get_notifier(type_: str) -> AbstractUpdateNotifier:
+    def get_notifier(self, type_: TransportType) -> AbstractUpdateNotifier:
         match type_:
             case TransportType.http:
                 return HTTPUpdateNotifier()
             case TransportType.kafka:
                 return KafkaUpdateNotifier()
+            case _:
+                return HTTPUpdateNotifier()

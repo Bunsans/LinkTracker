@@ -26,7 +26,7 @@ from src.exceptions.api_exceptions_handlers import (
     validation_exception_handler,
 )
 from src.exceptions.exceptions import LinkNotFoundError
-from src.kafka.kafka_consumer import KafkaConsumerService
+from src.kafka.consumer import KafkaConsumerService
 from src.settings import (
     PREFIX_API,
     APIServerSettings,
@@ -70,14 +70,14 @@ async def default_lifespan(application: FastAPI) -> AsyncIterator[None]:
         if kafka_settings.transport_type == TransportType.kafka:
             kafka_consumer = KafkaConsumerService(tg_client=application.tg_client)  # type: ignore[attr-defined,call-arg]
             await kafka_consumer.setup()
-            asyncio.create_task(kafka_consumer.start_consuming())  # type: ignore[attr-defined,call-arg]
+            task = asyncio.create_task(kafka_consumer.start_consuming())  # type: ignore[attr-defined,call-arg]
             logger.info("Kafka consumer started successfully")
 
         yield
         await db_helper.dispose()
         await stack.aclose()
         await kafka_consumer.stop()
-
+        await task
     await loop.shutdown_default_executor()
 
 

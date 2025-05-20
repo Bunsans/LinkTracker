@@ -1,9 +1,8 @@
 """Module for scraping and checking updates from GitHub and StackOverflow links."""
 
 import asyncio
-from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, AsyncGenerator, Literal, Optional
+from typing import TYPE_CHECKING, Literal
 
 import httpx
 from loguru import logger
@@ -11,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.data_classes import LinkUpdate
 from src.db import db_helper
-from src.db.db_helper import DatabaseHelper
 from src.dependencies import link_service
 from src.exceptions.exceptions import ExtractResponseError
 from src.scrapper.clients import GitHubClient, StackOverflowClient
@@ -40,20 +38,20 @@ class Scrapper:
         self.github_client = GitHubClient()
         self.stackoverflow_client = StackOverflowClient()
         self.link_service: LinkService | AsyncLinkService = link_service
-        self.update_notifier: AbstractUpdateNotifier = NotifierFactory.get_notifier(
-            type_=message_broker_settings.transport_type
+        self.update_notifier: AbstractUpdateNotifier = NotifierFactory().get_notifier(
+            type_=message_broker_settings.transport_type,
         )
         logger.debug(f"update_notifier: {self.update_notifier}")
 
     async def start(self) -> None:
         if hasattr(self.update_notifier, "start"):
             await self.update_notifier.start()
-            logger.debug(f"update_notifier: started")
+            logger.debug("update_notifier: started")
 
     async def stop(self) -> None:
         if hasattr(self.update_notifier, "stop"):
             await self.update_notifier.stop()
-            logger.debug(f"update_notifier: stopped")
+            logger.debug("update_notifier: stopped")
 
     def _get_type_link(self, link: str) -> Literal["github", "stackoverflow"] | None:
         """Determine the type of link (GitHub or StackOverflow).
@@ -135,10 +133,6 @@ class Scrapper:
             async with httpx.AsyncClient() as http_client:
                 for link, chat_ids in chat_id_group_by_link.items():
                     description = await self.get_description(link, week_ago, http_client)
-                    #                     logger.debug(
-                    #                         f"""Last update for {link}:
-                    # {description[:100] if isinstance(description, str) else None}""",
-                    #                     )
                     if description:
                         link_update = LinkUpdate(
                             id=self.curr_id,
@@ -160,10 +154,10 @@ async def scrapper() -> None:
             try:
                 await scraper.check_updates(session)
                 await asyncio.sleep(PERIOD_OF_CHECK_SECONDS)
-            except Exception as e:
+            except Exception as e:  # noqa: PERF203
                 logger.error(f"error while check updates\n\n{e}")
                 await scraper.stop()
-                raise e
+                raise
 
 
 if __name__ == "__main__":
