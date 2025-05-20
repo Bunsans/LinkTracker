@@ -11,6 +11,8 @@ from .constants import (
     TITLE_MAX_LEN,
 )
 from .db_settings import DBSettings, db_settings
+from .kafka_settings import MessageBrokerSettings, TransportType
+from .redis_settings import RedisSettings
 from .scrapper_settings import ScrapperSettings
 from .tg_bot_settings import TGBotSettings
 
@@ -29,4 +31,6 @@ __all__ = [
     "db_settings",
     "ScrapperSettings",
     "TGBotSettings",
+    "MessageBrokerSettings",
+    "TransportType",
 ]

@@ -67,3 +67,6 @@ logger.success(
 
 # Initialize services based on configuration
 link_service = get_link_service(type_service, type_repository)
+
+redis_settings = RedisSettings()
+redis_service = RedisService(redis_url=redis_settings.url)
