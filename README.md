@@ -1,43 +1,33 @@
-# Backend Academy 2025 Python Template
+# LinkTracker
 
-Welcome to the **Backend Academy 2025 Python Template**! This repository serves as a starting point for your Python projects, using **Poetry** for dependency management and packaging.
+It is project from course of Academy Backend T-bank
 
+## Description
+
+This is telegram bot for tracking of updates on github repos or stackoverflow questions. This project uses fastapi to write an api, telethon to write telegrams bot, async postgresql as a database for data storage, kafka for asynchronous interaction, and redis for caching.
+
+
+## Scheme 
+![alt text](./img/scheme.png)
+
+## To start bot
+Firstly you need pass credentials in .env, as example .env.example
+
+`make services` -- to start db, kafka and redis
+
+`make bot` -- to start tg bot
+
+`make server` -- to start server
+
+`make scrapper` -- to start scrapping(find updates and send notification)
 ## dev commands
 `docker compose up pg` -- поднять бд
 
 `alembic revision --autogenerate -m "Create chat and link tables"` -- создать миграцию
 
 `alembic upgrade head` -- применение миграции
-## TODO
 
-- [x] Бот должен поддерживать следующие команды:
-- [x] Команда /list должна выводить специальное сообщение, если список отслеживаемых ссылок пуст.
-- [x] Неизвестные команды должны игнорироваться с уведомлением пользователю.
-- [x] Все endpoint'ы соответствуют OpenAPI-контракту
-- [x] Реализован базовый планировщик: бот присылает простейшее уведомление (заглушку) в случае обнаружения изменений
-- [x] Общение между приложениями bot и scrapper происходит по HTTP
-- [x] Добавить паттерн Репозиторий для хранения данных(на данный момент реализован простой dict)
-- [x] Добавить игнорирование неизвестных команд типа /\<command\>.
-## TODO нефункциональные
-- [x] Токен авторизации должен храниться в конфигурационном файле, недоступном для общего доступа
-- [x] Поддерживается скреппинг вопросов StackOverflow и репозиториев GitHub -- вам нужно написать HTTP-клиентов для получения необходимой информации из API
-- [x] Не нужно парсить страницу (HTML), нужно работать с API: GitHub, StackOverflow
-- [x] Запрещается использовать готовые SDK для доступа к API для HTTP-клиентов (GitHub, StackOverflow):
-- [x] Клиентов нужно написать руками
-- [x] Бот должен реализовывать концепт машины состояний (создание /track должно идти в формате диалога, а не команды):
-- [x] В тестах запрещено делать реальные вызовы к API внешних систем, нужно использовать заглушки (mocks)
-- [x] Используйте типобезопасную конфигурацию
-- [ ] Cтруктурное логирование (добавление key-value значений к логу, вместо зашивания данных в поле message) в коде приложения
-## TODO tests
-- [x] Корректный парсинг ссылок
-- [x] Правильное сохранение данных в репозиторий из запроса пользователя: ссылка, тэги, фильтры
-- [x]  Бот кидает ошибку, если команда неизвестна
-- [x] Тесты на happy path: добавление и удаление ссылок из репозитория
-- [x] Тест на добавление дубля ссылки
-- [x]  Тесты для планировщика: обновление отправляется только пользователям, которые следят за ссылкой
-- [x] Тесты на корректную обработку ошибок HTTP-запросов (некорректное тело, код) в клиентах
-- [x] Проверка форматирования команды /list
-
+# For developing
 
 ## Table of Contents
 
