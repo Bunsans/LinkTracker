@@ -40,6 +40,10 @@ sync:
 .PHONY: db
 db:
 	docker compose up -d pg
+	
+.PHONY: services
+services:
+	docker compose up -d 
 
 
 .PHONY: server
@@ -49,3 +53,7 @@ server:
 .PHONY: bot
 bot:
 	$(RUN) python3 src/main.py
+
+.PHONY: scrapper
+scrapper:
+	$(RUN) python3 src/scrapper/scrapper.py

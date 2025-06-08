@@ -41,5 +41,15 @@ jobs:
         BOT_TOKEN: test
         API_HOST_SERVER: "0.0.0.0"
         API_PORT_SERVER: 7777
+
+
+        SCRAPPER_GITHUB_TOKEN: test
+        SCRAPPER_BATCH_SIZE: 2
+        SCRAPPER_BODY_MAX_LEN: 200
+        SCRAPPER_TITLE_MAX_LEN: 100
+
+        DB_URL: postgresql+asyncpg://test:password_test@localhost:5432/link
+        DB_ECHO: 0
+
       run: |
         make test

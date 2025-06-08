@@ -3,7 +3,7 @@ from fastapi import status
 from telethon.events import NewMessage
 
 from src.handlers.handlers_settings import api_settings
-from src.utils import send_message_from_bot
+from src.utils.bot_utils import send_message_from_bot
 
 
 async def is_chat_registrated(event: NewMessage.Event) -> bool:

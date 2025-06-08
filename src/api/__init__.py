@@ -1,12 +1,4 @@
-from fastapi import APIRouter
+from .api_v1 import router_v1
+from .api_v2 import router_v2
 
-from . import ping
-from .links import views as links_views
-from .tg_chat import views as tg_chat_views
-
-__all__ = ("router",)
-
-router = APIRouter()
-router.include_router(ping.router, tags=["ping"])
-router.include_router(links_views.router, tags=["links"])
-router.include_router(tg_chat_views.router, tags=["tg_chat"])
+__all__ = ("router_v1", "router_v2")

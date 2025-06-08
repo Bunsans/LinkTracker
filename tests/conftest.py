@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from telethon import TelegramClient
 from telethon.events import NewMessage
 
-from src.api import router
+from src.api import router_v1
 from src.server import default_lifespan
 
 
@@ -29,7 +29,7 @@ def fast_api_application() -> FastAPI:
         title="telegram_bot_app",
         lifespan=default_lifespan,
     )
-    app.include_router(router=router, prefix="/api/v1")
+    app.include_router(router=router_v1, prefix="/api/v1")
     return app
 
 
